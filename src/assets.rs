@@ -8,6 +8,7 @@ use serde::Deserialize;
 pub enum Role {
     Terrain,
     Decal,
+    Prop,
 }
 
 #[derive(Clone, Debug)]
@@ -50,8 +51,16 @@ pub fn terrain_dir() -> PathBuf {
     PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("assets/terrain")
 }
 
+pub fn props_dir() -> PathBuf {
+    PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("assets/props")
+}
+
 pub fn load_catalog() -> Result<Vec<Sprite>> {
-    load_catalog_from(&terrain_dir())
+    let mut sprites = load_catalog_from(&terrain_dir())?;
+    if props_dir().join("manifest.json").is_file() {
+        sprites.extend(load_catalog_from(&props_dir())?);
+    }
+    Ok(sprites)
 }
 
 pub fn load_catalog_from(dir: &Path) -> Result<Vec<Sprite>> {
@@ -66,6 +75,7 @@ pub fn load_catalog_from(dir: &Path) -> Result<Vec<Sprite>> {
         let role = match entry.role.as_str() {
             "terrain" => Role::Terrain,
             "decal" => Role::Decal,
+            "prop" => Role::Prop,
             other => bail!("unknown sprite role `{other}` in {}", entry.id),
         };
         let path = dir.join(&entry.file);
@@ -101,24 +111,25 @@ pub fn pack_atlas(sheets: &[(String, u32, u32, Vec<u8>)]) -> Result<Atlas> {
             .map(|(_, w, _, _)| *w)
             .max()
             .unwrap_or(32)
-            .max(256),
+            .max(512),
     );
     let mut x = 0u32;
     let mut y = 0u32;
     let mut row_h = 0u32;
     let mut placed = vec![(0u32, 0u32); sheets.len()];
+    const PAD: u32 = 1;
 
     for i in order {
         let w = sheets[i].1;
         let h = sheets[i].2;
-        if x > 0 && x + w > atlas_width {
+        if x > 0 && x + w + PAD > atlas_width {
             x = 0;
             y += row_h;
             row_h = 0;
         }
         placed[i] = (x, y);
-        x += w;
-        row_h = row_h.max(h);
+        x += w + PAD;
+        row_h = row_h.max(h + PAD);
     }
     let atlas_height = next_pow2(y + row_h);
 

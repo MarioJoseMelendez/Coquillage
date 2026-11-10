@@ -2,9 +2,9 @@
 
 Top-down wilderness sandbox. Custom Rust renderer (`wgpu` + `winit`), no game engine.
 
-Phase 2 loads terrain PNGs from `assets/terrain/`, packs an atlas, and draws grass, dirt, stone and sand with edge transitions. Logical resolution is still 640×360, tiles 32×32, nearest-neighbor integer upscale. 16×16 decals use the same pixel density.
+Phase 3 is a forest floor: terrain PNGs plus top-down tree canopies, bushes, ferns, flowers and mushrooms. Logical resolution 640×360, nearest-neighbor integer upscale. 1 sprite pixel = 1 world pixel.
 
-## How to run (Phase 2)
+## How to run (Phase 3)
 
 Needs [Rust](https://rustup.rs/) 1.96 and a C linker.
 
@@ -23,7 +23,7 @@ cd C:\Users\mario\workplace\Zaralle
 cargo run --release
 ```
 
-A window titled **Zaralle — Phase 2** should open at 1280×720 (2× scale).
+A window titled **Zaralle — Phase 3** should open at 1280×720 (2× scale).
 
 | Input | Action |
 | --- | --- |
@@ -33,15 +33,14 @@ A window titled **Zaralle — Phase 2** should open at 1280×720 (2× scale).
 
 What you should see:
 
-- Grass meadow, winding dirt/stone path, two sand clearings
-- Soft dithered edges where materials meet
-- 16×16 pebbles and grass tufts that stay sharp when resized
-- Dark letterbox bars if the window is not a multiple of 640×360
+- Winding stone path with forest crowding the sides
+- Irregular tree canopies (top-down, not side-on)
+- Bushes, ferns, flowers; sand clearings more open
+- Sharp pixels after resize
 
-Add a terrain PNG by dropping it in `assets/terrain/` and listing it in `manifest.json`. Stop after checking this. Phase 3 is not in yet.
-
-To regenerate the built-in tiles:
+Stop after checking that. Phase 4 (lighting) is not in yet.
 
 ```powershell
 python tools/gen_tiles.py
+python tools/gen_props.py
 ```

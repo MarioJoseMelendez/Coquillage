@@ -73,7 +73,7 @@ impl ApplicationHandler for App {
             event_loop
                 .create_window(
                     Window::default_attributes()
-                        .with_title("Zaralle — Phase 2")
+                        .with_title("Zaralle — Phase 3")
                         .with_inner_size(winit::dpi::LogicalSize::new(1280.0, 720.0))
                         .with_min_inner_size(winit::dpi::LogicalSize::new(640.0, 360.0)),
                 )
