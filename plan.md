@@ -5,7 +5,7 @@ Documento vivo. Aquí va el prompt original, la referencia visual, qué hay que 
 **Workspace:** `C:\Users\mario\workplace\Zaralle`  
 **Repo:** https://github.com/MarioJoseMelendez/Zaralle  
 **Motor:** Rust directo, sin Godot / Unity / Bevy.  
-**Fase actual:** 2 — Terrain and Asset Pipeline (compila; falta tu OK visual)
+**Fase actual:** 3 — Vegetation (compila; falta tu OK visual)
 
 ---
 
@@ -16,15 +16,14 @@ Documento vivo. Aquí va el prompt original, la referencia visual, qué hay que 
 3. Toda decisión de iluminación y tamaño de sprites se ancla a la imagen de referencia de abajo (mood y escala), con cámara **top-down ortográfica estricta** (la referencia es 3/4; no copiamos ese ángulo).
 4. Guardar el progreso de cada fase en este archivo.
 5. Pixler MCP: instalarlo cuando exista el token `pxl_live_...` en `~/.cursor/mcp.json`. Phase 1 usa gráficos de prueba, no assets de Pixler.
+6. **Cobertura / fade:** si el jugador queda debajo de un objeto que lo tapa (copa de árbol, arbusto grande), **solo ese objeto** se vuelve semitransparente (efecto de invisibilidad / ghost). El resto del bosque no cambia. Sin blur: es alfa, los píxeles siguen nítidos. Cuando exista sprite de jugador se usa su posición; hasta entonces el probe es el centro de la cámara.
 
-### Ahora mismo (Phase 2)
+### Ahora mismo (Phase 3)
 
-- Cargar PNG de terreno desde `assets/terrain/` + `manifest.json`.
-- Atlas empaquetado en runtime; decals 16×16 a la misma densidad de píxel que los tiles 32×32.
-- Materiales distinguibles: hierba A/B, tierra, piedra, arena.
-- Transiciones automáticas en los bordes (dither por vecino).
-- Añadir un PNG + entrada en el manifiesto no toca el renderer.
-- Parar. No Phase 3 (vegetación).
+- Árboles top-down **legibles**: tronco (anillos tipo log de Minecraft) + ramas + copas en las puntas, no un blob verde.
+- Texturas estilo HD Minecraft: pocas formas grandes, no píxeles al azar.
+- Fade del objeto que cubre al probe (centro de cámara / futuro jugador).
+- Parar. No Phase 4 (luz).
 
 ### Herramientas previstas (evaluar al usarlas)
 
@@ -77,6 +76,18 @@ Resolución lógica prevista: **640×360**. Tile base: **32×32**. Upscale neare
 | Figura humana (fuera de scope inicial) | ~24×32 a 32×48 | solo para calibrar escala; Phase 1–3 no meten NPCs |
 
 Sprites aislados: fondo transparente, sin sombra ni lighting horneados (la sombra irá en la capa ambiental). Varias variantes por categoría. Densidad de píxel constante aunque el canvas cambie de tamaño.
+
+Lenguaje de textura: **Minecraft HD** (Faithful / vanilla 32px). Pocas formas grandes y paleta corta. Cero sal de píxeles. Árbol top-down = corte del tronco (anillos) + ramas que salen + hojas en las puntas.
+
+### Cobertura del jugador (obligatorio)
+
+El juego **detecta** cuando el jugador está debajo de un objeto que lo tapa (copa, arbusto grande, más adelante techo de copa densa).
+
+- Solo **ese** instance se desvanece (alfa ~0.3, ghost). No se borra.
+- El resto de árboles no se tocan.
+- Sin blur ni shaders de distorsión: el pixel-art sigue nítido.
+- Hitbox más chica que el sprite (centro de la copa), para no fadealizar al rozar el borde.
+- Hoy el probe es el **centro de la cámara**. El día que exista el sprite del jugador, el probe pasa a su posición.
 
 ### Paleta anclada a la imagen
 
@@ -803,6 +814,7 @@ These rules apply throughout the project.
 13. Prioritize a working implementation over excessive architecture.
 14. Do not introduce gameplay systems unrelated to the current phase.
 15. Do not continue automatically after completing a phase.
+16. If the player is under a covering prop, fade only that prop (see-through / invisibility). Never hide the whole forest.
 
 Phase Completion Report
 
@@ -867,8 +879,9 @@ Gráficos de Phase 1: patrón de prueba honesto (hierba / tierra / sendero gener
 | Este `plan.md` | hecho |
 | Pixler MCP | pendiente de token `pxl_live_...` |
 | Código Rust Phase 1 | hecho (aprobado al pedir Phase 2) |
-| Código Rust Phase 2 | compilado (`image` + atlas PNG, target GNU) |
-| Phases 3–7 | bloqueadas hasta aprobar la anterior |
+| Código Rust Phase 2 | hecho (aprobado al pedir seguir) |
+| Código Rust Phase 3 | compilado (props PNG, colocación irregular) |
+| Phases 4–7 | bloqueadas hasta aprobar la anterior |
 
 Cuando termine Phase 1, el informe de cierre va en la siguiente sección.
 
@@ -925,6 +938,20 @@ cargo +zaralle-gnu run --release
 
 Ventana **Zaralle — Phase 2**. Recorre con WASD: hierba, sendero, piedra, arena, bordes mezclados, pebbles/tufts nítidos al redimensionar.
 
-**Limitaciones:** transiciones son dither de borde, no autotile blob de 16 variantes. Vegetación grande es Phase 3. Pixler sigue fuera.
+**Limitaciones:** transiciones son dither de borde, no autotile blob de 16 variantes. Pixler sigue fuera.
 
 **Arquitectura para fases siguientes:** sprites nuevos = PNG + fila en el manifiesto. El present pass no cambió.
+
+### Phase 3 — Vegetation and Environmental Composition
+
+**Estado:** código listo. Parado a la espera de tu OK visual. No se empezó Phase 4.
+
+**Qué hay:**
+
+- Árboles top-down con tronco (anillos), ramas y copas en las puntas (`tree_a/b/c`).
+- Arbustos, helechos, flores, hongos en `assets/props/`.
+- Fade ghost si el centro de la cámara (futuro jugador) entra bajo un árbol o arbusto.
+
+**Cómo probarlo:** ventana **Zaralle — Phase 3**. Acércate a un árbol: tiene que leerse tronco + ramas. Camina “debajo”: esa copa se pone semitransparente.
+
+**Limitaciones:** sin sprite de jugador todavía (el probe es la cámara). Sin luz (Phase 4).

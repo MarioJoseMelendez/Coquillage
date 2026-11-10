@@ -24,11 +24,14 @@ pub struct Instance {
     pub world_xy: [f32; 2],
     pub atlas_xy: [f32; 2],
     pub size_xy: [f32; 2],
+    pub alpha: f32,
+    pub _pad: f32,
 }
 
 pub struct Terrain {
     pub atlas: Atlas,
     pub instances: Vec<Instance>,
+    pub occluders: Vec<u32>,
 }
 
 pub fn quad_vertices() -> [Vertex; 6] {
@@ -113,7 +116,10 @@ pub fn build() -> Result<Terrain> {
         }
     }
 
-    for sprite in catalog.iter().filter(|sprite| sprite.role == Role::Decal) {
+    for sprite in catalog
+        .iter()
+        .filter(|sprite| sprite.role != Role::Terrain)
+    {
         sheets.push((
             sprite.id.clone(),
             sprite.width,
@@ -140,7 +146,13 @@ pub fn build() -> Result<Terrain> {
     }
 
     place_decals(&atlas, &map, &mut instances)?;
-    Ok(Terrain { atlas, instances })
+    let mut occluders = Vec::new();
+    place_vegetation(&atlas, &map, &mut instances, &mut occluders)?;
+    Ok(Terrain {
+        atlas,
+        instances,
+        occluders,
+    })
 }
 
 fn build_map() -> Vec<u8> {
@@ -226,7 +238,7 @@ fn bake_tile(terrain: &HashMap<&str, &Sprite>, key: [u8; 5]) -> Vec<u8> {
     let east = terrain[material_name(key[2])];
     let south = terrain[material_name(key[3])];
     let west = terrain[material_name(key[4])];
-    let band = 7i32;
+    let band = 4i32;
     let mut out = vec![0u8; (TILE_SIZE * TILE_SIZE * 4) as usize];
 
     for y in 0..TILE_SIZE {
@@ -278,7 +290,7 @@ fn blend_edge(
         return current;
     }
     let chance = (band - dist) as u32;
-    if hash(x, y, salt) % (band as u32) < chance {
+    if hash(x / 2, y / 2, salt) % (band as u32) < chance {
         assets::sample(neighbor, x, y)
     } else {
         current
@@ -329,11 +341,213 @@ fn place_decals(atlas: &Atlas, map: &[u8], instances: &mut Vec<Instance>) -> Res
     Ok(())
 }
 
+fn place_vegetation(
+    atlas: &Atlas,
+    map: &[u8],
+    instances: &mut Vec<Instance>,
+    occluders: &mut Vec<u32>,
+) -> Result<()> {
+    let world_w = (MAP_WIDTH * TILE_SIZE) as f32;
+    let world_h = (MAP_HEIGHT * TILE_SIZE) as f32;
+    let mut occupied: Vec<(f32, f32, f32)> = Vec::new();
+
+    scatter(
+        atlas,
+        map,
+        instances,
+        occluders,
+        &mut occupied,
+        &["clump_a", "flower_a", "flower_b", "mushroom_a"],
+        14.0,
+        10.0,
+        0.55,
+        world_w,
+        world_h,
+        201,
+        false,
+    )?;
+    scatter(
+        atlas,
+        map,
+        instances,
+        occluders,
+        &mut occupied,
+        &["fern_a", "fern_b"],
+        28.0,
+        18.0,
+        0.28,
+        world_w,
+        world_h,
+        207,
+        false,
+    )?;
+    scatter(
+        atlas,
+        map,
+        instances,
+        occluders,
+        &mut occupied,
+        &["bush_c", "bush_b", "bush_a"],
+        28.0,
+        22.0,
+        0.38,
+        world_w,
+        world_h,
+        211,
+        true,
+    )?;
+    scatter(
+        atlas,
+        map,
+        instances,
+        occluders,
+        &mut occupied,
+        &["tree_c", "tree_b", "tree_a"],
+        58.0,
+        48.0,
+        0.28,
+        world_w,
+        world_h,
+        223,
+        true,
+    )?;
+    Ok(())
+}
+
+fn scatter(
+    atlas: &Atlas,
+    map: &[u8],
+    instances: &mut Vec<Instance>,
+    occluders: &mut Vec<u32>,
+    occupied: &mut Vec<(f32, f32, f32)>,
+    ids: &[&str],
+    step: f32,
+    radius: f32,
+    chance: f32,
+    world_w: f32,
+    world_h: f32,
+    salt: u32,
+    occludes: bool,
+) -> Result<()> {
+    let frames: Vec<&Frame> = ids
+        .iter()
+        .map(|id| {
+            atlas
+                .frames
+                .get(*id)
+                .with_context(|| format!("atlas missing prop `{id}`"))
+        })
+        .collect::<Result<Vec<_>>>()?;
+
+    let cols = ((world_w / step).ceil() as u32).max(1);
+    let rows = ((world_h / step).ceil() as u32).max(1);
+    for gy in 0..rows {
+        for gx in 0..cols {
+            let jx = (hash(gx, gy, salt) % step as u32) as f32;
+            let jy = (hash(gx, gy, salt + 7) % step as u32) as f32;
+            let x = gx as f32 * step + jx - step * 0.25;
+            let y = gy as f32 * step + jy - step * 0.25;
+            if x < 8.0 || y < 8.0 || x > world_w - 24.0 || y > world_h - 24.0 {
+                continue;
+            }
+            let density = density_at(map, x, y);
+            if density <= 0.02 {
+                continue;
+            }
+            let grove = value_noise(x / 92.0, y / 92.0, salt);
+            let roll = (hash(gx, gy, salt + 13) % 1000) as f32 / 1000.0;
+            if roll > chance * density * (0.45 + grove * 0.7) {
+                continue;
+            }
+            if too_close(occupied, x, y, radius) {
+                continue;
+            }
+            if path_clearance(x, y) < 1.7 && radius > 20.0 {
+                continue;
+            }
+            let variant = hash(gx, gy, salt + 29) as usize % frames.len();
+            let frame = frames[variant];
+            let px = (x - frame.w as f32 * 0.5).clamp(0.0, world_w - frame.w as f32);
+            let py = (y - frame.h as f32 * 0.5).clamp(0.0, world_h - frame.h as f32);
+            if occludes {
+                occluders.push(instances.len() as u32);
+            }
+            instances.push(instance_from_frame(px, py, frame));
+            occupied.push((x, y, radius * 0.72));
+        }
+    }
+    Ok(())
+}
+
+fn density_at(map: &[u8], x: f32, y: f32) -> f32 {
+    let tx = (x / TILE_SIZE as f32).floor().clamp(0.0, (MAP_WIDTH - 1) as f32) as u32;
+    let ty = (y / TILE_SIZE as f32).floor().clamp(0.0, (MAP_HEIGHT - 1) as f32) as u32;
+    match map[(ty * MAP_WIDTH + tx) as usize] {
+        0 | 1 => 1.0,
+        2 => 0.28,
+        3 => 0.04,
+        4 => 0.12,
+        _ => 0.0,
+    }
+}
+
+fn path_clearance(x: f32, y: f32) -> f32 {
+    let tx = x / TILE_SIZE as f32;
+    let ty = y / TILE_SIZE as f32;
+    let path_center = 18.0 + (tx * 0.18).sin() * 5.0;
+    (ty - path_center).abs()
+}
+
+fn too_close(occupied: &[(f32, f32, f32)], x: f32, y: f32, radius: f32) -> bool {
+    occupied.iter().any(|(ox, oy, r)| {
+        let dx = x - ox;
+        let dy = y - oy;
+        dx * dx + dy * dy < (radius.min(*r)).powi(2)
+    })
+}
+
+fn value_noise(x: f32, y: f32, salt: u32) -> f32 {
+    let x0 = x.floor();
+    let y0 = y.floor();
+    let fx = x - x0;
+    let fy = y - y0;
+    let ix = x0 as u32;
+    let iy = y0 as u32;
+    let v00 = (hash(ix, iy, salt) % 1000) as f32 / 1000.0;
+    let v10 = (hash(ix.wrapping_add(1), iy, salt) % 1000) as f32 / 1000.0;
+    let v01 = (hash(ix, iy.wrapping_add(1), salt) % 1000) as f32 / 1000.0;
+    let v11 = (hash(ix.wrapping_add(1), iy.wrapping_add(1), salt) % 1000) as f32 / 1000.0;
+    let sx = fx * fx * (3.0 - 2.0 * fx);
+    let sy = fy * fy * (3.0 - 2.0 * fy);
+    let a = v00 + (v10 - v00) * sx;
+    let b = v01 + (v11 - v01) * sx;
+    a + (b - a) * sy
+}
+
+pub fn update_cover_fade(instances: &mut [Instance], occluders: &[u32], probe: glam::Vec2) {
+    const GHOST: f32 = 0.32;
+    for &index in occluders {
+        let Some(instance) = instances.get_mut(index as usize) else {
+            continue;
+        };
+        let cx = instance.world_xy[0] + instance.size_xy[0] * 0.5;
+        let cy = instance.world_xy[1] + instance.size_xy[1] * 0.5;
+        let rx = instance.size_xy[0] * 0.34;
+        let ry = instance.size_xy[1] * 0.34;
+        let nx = (probe.x - cx) / rx.max(1.0);
+        let ny = (probe.y - cy) / ry.max(1.0);
+        let target = if nx * nx + ny * ny <= 1.0 { GHOST } else { 1.0 };
+        instance.alpha += (target - instance.alpha) * 0.22;
+    }
+}
+
 fn instance_from_frame(world_x: f32, world_y: f32, frame: &Frame) -> Instance {
     Instance {
         world_xy: [world_x, world_y],
         atlas_xy: [frame.x as f32, frame.y as f32],
         size_xy: [frame.w as f32, frame.h as f32],
+        alpha: 1.0,
+        _pad: 0.0,
     }
 }
 

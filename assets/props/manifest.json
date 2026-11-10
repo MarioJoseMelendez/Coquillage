@@ -1,0 +1,16 @@
+{
+  "sprites": [
+    { "id": "tree_a", "file": "tree_a.png", "role": "prop" },
+    { "id": "tree_b", "file": "tree_b.png", "role": "prop" },
+    { "id": "tree_c", "file": "tree_c.png", "role": "prop" },
+    { "id": "bush_a", "file": "bush_a.png", "role": "prop" },
+    { "id": "bush_b", "file": "bush_b.png", "role": "prop" },
+    { "id": "bush_c", "file": "bush_c.png", "role": "prop" },
+    { "id": "fern_a", "file": "fern_a.png", "role": "prop" },
+    { "id": "fern_b", "file": "fern_b.png", "role": "prop" },
+    { "id": "flower_a", "file": "flower_a.png", "role": "prop" },
+    { "id": "flower_b", "file": "flower_b.png", "role": "prop" },
+    { "id": "mushroom_a", "file": "mushroom_a.png", "role": "prop" },
+    { "id": "clump_a", "file": "clump_a.png", "role": "prop" }
+  ]
+}

@@ -32,6 +32,8 @@ pub struct Renderer {
     present_pipeline: wgpu::RenderPipeline,
     vertex_buffer: wgpu::Buffer,
     instance_buffer: wgpu::Buffer,
+    instances: Vec<Instance>,
+    occluders: Vec<u32>,
     instance_count: u32,
 }
 
@@ -207,7 +209,12 @@ impl Renderer {
         let instance_layout = wgpu::VertexBufferLayout {
             array_stride: std::mem::size_of::<Instance>() as u64,
             step_mode: wgpu::VertexStepMode::Instance,
-            attributes: &wgpu::vertex_attr_array![2 => Float32x2, 3 => Float32x2, 4 => Float32x2],
+            attributes: &wgpu::vertex_attr_array![
+                2 => Float32x2,
+                3 => Float32x2,
+                4 => Float32x2,
+                5 => Float32
+            ],
         };
 
         let world_pipeline = device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
@@ -277,11 +284,12 @@ impl Renderer {
             usage: wgpu::BufferUsages::VERTEX,
         });
         let instances = terrain.instances;
+        let occluders = terrain.occluders;
         let instance_count = instances.len() as u32;
         let instance_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
             label: Some("tile-instances"),
             contents: bytemuck::cast_slice(&instances),
-            usage: wgpu::BufferUsages::VERTEX,
+            usage: wgpu::BufferUsages::VERTEX | wgpu::BufferUsages::COPY_DST,
         });
 
         Ok(Self {
@@ -301,6 +309,8 @@ impl Renderer {
             present_pipeline,
             vertex_buffer,
             instance_buffer,
+            instances,
+            occluders,
             instance_count,
         })
     }
@@ -325,6 +335,15 @@ impl Renderer {
         };
         self.queue
             .write_buffer(&self.camera_buffer, 0, bytemuck::bytes_of(&uniform));
+
+        let probe = camera.position
+            + glam::Vec2::new(LOGICAL_WIDTH, LOGICAL_HEIGHT) * 0.5;
+        world::update_cover_fade(&mut self.instances, &self.occluders, probe);
+        self.queue.write_buffer(
+            &self.instance_buffer,
+            0,
+            bytemuck::cast_slice(&self.instances),
+        );
 
         let frame = match self.surface.get_current_texture() {
             wgpu::CurrentSurfaceTexture::Success(frame)

@@ -11,6 +11,7 @@ struct VsIn {
     @location(2) world_xy: vec2<f32>,
     @location(3) atlas_xy: vec2<f32>,
     @location(4) size_xy: vec2<f32>,
+    @location(5) alpha: f32,
 };
 
 struct VsOut {
@@ -18,6 +19,7 @@ struct VsOut {
     @location(0) uv: vec2<f32>,
     @location(1) atlas_xy: vec2<f32>,
     @location(2) size_xy: vec2<f32>,
+    @location(3) alpha: f32,
 };
 
 @vertex
@@ -31,6 +33,7 @@ fn vs_main(in: VsIn) -> VsOut {
     out.uv = in.uv;
     out.atlas_xy = in.atlas_xy;
     out.size_xy = in.size_xy;
+    out.alpha = in.alpha;
     return out;
 }
 
@@ -42,5 +45,5 @@ fn fs_main(in: VsOut) -> @location(0) vec4<f32> {
     if (color.a < 0.5) {
         discard;
     }
-    return color;
+    return vec4<f32>(color.rgb, color.a * in.alpha);
 }
