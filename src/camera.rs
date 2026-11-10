@@ -1,0 +1,44 @@
+use glam::{Mat4, Vec2};
+
+use crate::world::{LOGICAL_HEIGHT, LOGICAL_WIDTH};
+
+pub struct Camera {
+    pub position: Vec2,
+    pub world_size: Vec2,
+}
+
+impl Camera {
+    pub fn new(world_size: Vec2) -> Self {
+        let position = Vec2::new(
+            (world_size.x - LOGICAL_WIDTH).max(0.0) * 0.35,
+            (world_size.y - LOGICAL_HEIGHT).max(0.0) * 0.4,
+        );
+        Self {
+            position,
+            world_size,
+        }
+    }
+
+    pub fn pan(&mut self, delta: Vec2) {
+        self.position += delta;
+        self.position.x = self
+            .position
+            .x
+            .clamp(0.0, (self.world_size.x - LOGICAL_WIDTH).max(0.0));
+        self.position.y = self
+            .position
+            .y
+            .clamp(0.0, (self.world_size.y - LOGICAL_HEIGHT).max(0.0));
+    }
+
+    pub fn view_proj(&self) -> Mat4 {
+        Mat4::orthographic_rh(
+            self.position.x,
+            self.position.x + LOGICAL_WIDTH,
+            self.position.y + LOGICAL_HEIGHT,
+            self.position.y,
+            -1.0,
+            1.0,
+        )
+    }
+}

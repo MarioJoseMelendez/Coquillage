@@ -1,0 +1,15 @@
+[package]
+name = "zaralle"
+version = "0.1.0"
+edition = "2021"
+description = "Top-down wilderness sandbox — custom Rust renderer"
+
+[dependencies]
+anyhow = "1.0"
+bytemuck = { version = "1.22", features = ["derive"] }
+env_logger = "0.11"
+glam = "0.30"
+log = "0.4"
+pollster = "0.4"
+wgpu = "30.0"
+winit = "0.30"

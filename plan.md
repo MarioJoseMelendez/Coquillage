@@ -1,0 +1,879 @@
+# Zaralle — plan de desarrollo
+
+Documento vivo. Aquí va el prompt original, la referencia visual, qué hay que hacer y el estado real del repo.
+
+**Workspace:** `C:\Users\mario\workplace\Zaralle`  
+**Repo:** https://github.com/MarioJoseMelendez/Zaralle  
+**Motor:** Rust directo, sin Godot / Unity / Bevy.  
+**Fase actual:** 1 — Rendering Foundation (aún no implementada)
+
+---
+
+## Qué hacer
+
+1. Completar **una sola fase** del roadmap, verificar, parar y esperar aprobación.
+2. Empezar por **Phase 1**. No lighting avanzado, no agua, no bosque procedural, no clima.
+3. Toda decisión de iluminación y tamaño de sprites se ancla a la imagen de referencia de abajo (mood y escala), con cámara **top-down ortográfica estricta** (la referencia es 3/4; no copiamos ese ángulo).
+4. Guardar el progreso de cada fase en este archivo.
+5. Pixler MCP: instalarlo cuando exista el token `pxl_live_...` en `~/.cursor/mcp.json`. Phase 1 usa gráficos de prueba, no assets de Pixler.
+
+### Ahora mismo (Phase 1)
+
+- App Rust + `winit` + `wgpu`.
+- Cámara top-down ortográfica.
+- Mundo pixel-art a resolución lógica fija, upscale nearest-neighbor (escala entera, letterbox).
+- Arquitectura lista para una capa ambiental posterior (offscreen world → present).
+- Escena de terreno básica con gráficos de prueba identificables.
+- Compilar, abrir ventana, comprobar que los píxeles siguen nítidos al redimensionar.
+- Parar. No Phase 2.
+
+### Herramientas previstas (evaluar al usarlas)
+
+| Crate | Para qué | Cuándo |
+| --- | --- | --- |
+| `wgpu` | GPU / render | Phase 1 |
+| `winit` | ventana e input | Phase 1 |
+| `glam` | matrices ortográficas | Phase 1 |
+| `bytemuck` | uniforms GPU | Phase 1 |
+| `pollster` | init async de wgpu | Phase 1 |
+| `image` | cargar PNG | Phase 2 |
+| `kira` | audio | solo si hace falta audio |
+
+Toolchain local ya vista: `rustc` / `cargo` 1.96.0.
+
+---
+
+## Referencia visual
+
+Archivo: [`assets/reference/wilderness-lighting-sprites.jpg`](assets/reference/wilderness-lighting-sprites.jpg)
+
+La imagen define **iluminación y tamaños**, no la cámara. El spec exige top-down ortográfico puro, sin isométrico ni objetos “de 3D”. En la referencia hay un leve 3/4 (troncos, rayos, figuras de lado). Eso se traduce así:
+
+- **Cámara del juego:** mirada vertical, escala constante, árboles leíbles desde arriba (copa, no alzado).
+- **De la imagen sí se copia:** densidad HD, paleta, mood de luz, tamaños relativos, composición orgánica del bosque.
+
+### Iluminación (de la imagen → Phase 4+, no implementar ahora)
+
+- Sol alto, ligeramente desplazado; ejes de luz cálidos (amarillo-blanco) desde el tercio superior.
+- God rays / shafts volumétricos colando entre copas.
+- Marco casi negro de hojas: oclusión de dosel, viñeta natural.
+- Suelo en sombra: verde-azul frío, saturación baja.
+- Sendero iluminado: marrones cálidos, adoquines con highlight de humedad.
+- Luz local de antorcha: naranja puntual, bloom corto (lenguaje de luz, no gameplay todavía).
+- Lluvia: trazos finos diagonales (Phase 6).
+- No fotorealismo 3D. La geometría pixel-art sigue nítida; la luz es una capa aparte a resolución de display.
+
+### Tamaños de sprites (de la imagen + tabla del spec)
+
+Resolución lógica prevista: **640×360**. Tile base: **32×32**. Upscale nearest-neighbor a escala entera (2× en 1280×720, 3× en 1920×1080).
+
+| Tipo | Tamaño | Notas desde la referencia |
+| --- | --- | --- |
+| Tile de terreno | 32×32 | sendero ~3–4 tiles de ancho; adoquines internos ~16×16 |
+| Hierba / flores / hongos | 16×16 a 32×32 | clusters pequeños, no un sprite de “césped plano” |
+| Arbustos / helechos | 32×32 a 64×64 | silueta irregular, varias densidades |
+| Rocas / tocones | 32×32 a 64×64 | musgo, corteza, no cubos |
+| Copas de árbol (top-down) | 64×96 a 96×128 o más | en la ref cubren gran parte del encuadre; no forzarlas a un tile |
+| Criatura media | 32×32 a 48×48 | el ser naranja del camino |
+| Figura humana (fuera de scope inicial) | ~24×32 a 32×48 | solo para calibrar escala; Phase 1–3 no meten NPCs |
+
+Sprites aislados: fondo transparente, sin sombra ni lighting horneados (la sombra irá en la capa ambiental). Varias variantes por categoría. Densidad de píxel constante aunque el canvas cambie de tamaño.
+
+### Paleta anclada a la imagen
+
+- Verdes bosque profundos, oliva, amarillo-verde apagado en hojas tocadas por el sol.
+- Marrones tierra y sendero húmedo.
+- Grises piedra con highlight cálido.
+- Azul-verde frío en sombra y lluvia.
+- Sol: amarillo sucio, no neón.
+- Evitar verdes chillones y saturación alta.
+
+---
+
+## Prompt original (spec del proyecto)
+
+Texto de referencia para el trabajo. Las fases de abajo mandan. No implementar el spec entero de una vez.
+
+---
+
+Project Specification — High-Definition Pixel Art Wilderness Sandbox
+
+You are developing the visual and technical foundation of a top-down wilderness sandbox game.
+
+The project must be implemented directly in Rust, without using an existing game engine.
+
+The objective is to create a visually rich, explorable natural world that combines high-definition pixel art with sophisticated, realistic environmental rendering.
+
+This document defines the artistic direction, technical requirements, architecture guidelines and development roadmap.
+
+IMPORTANT: Development must happen progressively, one phase at a time. Do not attempt to implement the entire project in a single pass.
+
+### 1. Core Vision
+
+Create a visually rich, immersive wilderness sandbox game with a strict top-down orthographic perspective.
+
+The world should combine the visual identity of high-definition pixel art with realistic environmental rendering.
+
+The intended aesthetic is a detailed, living natural environment where every object is carefully pixel-crafted, while lighting, shadows, water, atmosphere and environmental effects behave in a visually realistic way.
+
+The world should feel organic, quiet, immersive and explorable.
+
+Primary inspiration:
+
+- The environmental freedom and exploration of Minecraft.
+- The top-down perspective and environmental presentation of GTA: Chinatown Wars.
+- Modern high-definition pixel art with sophisticated environmental lighting.
+- Realistic natural environments translated into a coherent pixel-art visual language.
+
+Do not imitate the exact visual identity of any existing game.
+
+Current Scope
+
+For the initial development, focus exclusively on natural environments.
+
+The initial world should contain:
+
+- Forests.
+- Grasslands.
+- Rivers.
+- Lakes.
+- Ponds.
+- Rocks.
+- Trees.
+- Bushes.
+- Natural terrain.
+- Other environmental elements.
+
+Do not introduce cities, buildings, vehicles, human characters, NPCs, weapons or urban elements.
+
+The first objective is to establish the visual foundation of the wilderness.
+
+### 2. Camera and Perspective
+
+- Strict top-down orthographic 2D perspective.
+- Camera looks directly down at the environment.
+- No isometric perspective.
+- No perspective convergence.
+- No 3D-looking object presentation.
+- Objects must maintain consistent scale and orientation.
+- Trees, rocks, vegetation and environmental objects must be readable from above.
+- The environment should support continuous exploration in all directions.
+
+The camera should make navigation and spatial awareness intuitive.
+
+### 3. Pixel Art Resolution and Density
+
+The art style must use high-definition, fine-grained pixel art.
+
+Avoid traditional chunky 8-bit or 16-bit aesthetics.
+
+Requirements:
+
+- Small, carefully controlled pixel clusters.
+- High detail density.
+- Crisp pixel boundaries.
+- Carefully constructed silhouettes.
+- Fine texture variation.
+- No excessive pixelation.
+- No blurry or artificially smoothed sprite textures.
+- Consistent pixel density across all assets.
+
+Suggested technical reference:
+
+| Asset type | Suggested dimensions |
+| --- | --- |
+| Base terrain tiles | 32×32 pixels |
+| Small environmental objects | 16×16 to 32×32 pixels |
+| Medium objects | 32×32 to 64×64 pixels |
+| Large trees | 64×96 to 96×128 pixels or larger |
+
+These dimensions are guidelines, not rigid restrictions.
+
+Do not force large objects into small tiles.
+
+Maintain consistent pixel scale even when assets have different dimensions.
+
+Rendering Resolution
+
+The internal resolution and sprite dimensions must be independent concepts.
+
+Requirements:
+
+- The pixel-art world should render at a controlled logical resolution.
+- The pixel-art layer must preserve crisp pixel boundaries.
+- Upscaling must use nearest-neighbor sampling.
+- Avoid unintended smoothing and texture interpolation.
+- Environmental effects should be capable of rendering at native display resolution.
+- The rendering pipeline must support different resolutions for pixel-art content and environmental effects.
+
+Do not assume that the entire game must render at a low resolution.
+
+The intention is to preserve detailed pixel-art objects while allowing smooth, sophisticated environmental rendering.
+
+### 4. Color Palette
+
+Use a natural, restrained and realistic color palette.
+
+Primary colors:
+
+- Multiple shades of natural green.
+- Deep forest greens.
+- Olive and muted yellow-green.
+- Earthy browns.
+- Dark soil tones.
+- Natural stone grays.
+- Muted blues and turquoise for water.
+- Subtle warm sunlight tones.
+
+Color requirements:
+
+- Avoid excessive saturation.
+- Avoid artificial neon colors.
+- Avoid overly bright greens.
+- Use natural variation between neighboring surfaces.
+- Use color temperature to communicate lighting conditions.
+- Maintain sufficient contrast between interactive objects and their surroundings.
+
+Different vegetation species should have distinguishable color characteristics.
+
+### 5. Terrain and Ground Materials
+
+Terrain must feel detailed, irregular and naturally distributed.
+
+Required terrain types:
+
+Grass
+
+- Multiple grass variations.
+- Small individual grass clusters.
+- Irregular patches.
+- Different shades and densities.
+- Occasional flowers and small plants.
+- Natural transitions between grass and dirt.
+
+Dirt
+
+- Fine soil texture.
+- Small stones.
+- Organic irregularities.
+- Footpaths and worn ground.
+- Subtle color variation.
+
+Sand
+
+- Fine grain-like texture.
+- Natural tonal variation.
+- Irregular boundaries.
+- Transitions into soil and water.
+
+Stone
+
+- Distinct rock patterns.
+- Cracks and surface irregularities.
+- Multiple stone sizes.
+- Moss and environmental wear.
+
+Forest Floor
+
+- Fallen leaves.
+- Twigs.
+- Roots.
+- Moss.
+- Small plants.
+- Organic debris.
+
+Avoid repetitive tile patterns and obvious grid-like terrain distribution.
+
+### 6. Vegetation and Natural Objects
+
+Vegetation is one of the most important visual elements.
+
+Trees
+
+- Multiple species.
+- Different canopy shapes.
+- Irregular silhouettes.
+- Dense and sparse foliage.
+- Natural color variation.
+- Detailed canopy texture.
+- Subtle depth and shadowing.
+- Different sizes and growth patterns.
+
+Bushes
+
+- Different sizes.
+- Irregular silhouettes.
+- Multiple foliage densities.
+
+Other Vegetation
+
+- Flowers.
+- Ferns.
+- Tall grass.
+- Small plants.
+- Mushrooms.
+- Roots.
+- Fallen branches.
+
+Vegetation should never look like repeated copies of the same sprite.
+
+Generate multiple variations for each object category.
+
+### 7. Water Rendering
+
+Water should be one of the most visually sophisticated elements.
+
+Requirements:
+
+- Smooth animated surface movement.
+- Natural reflections.
+- Subtle transparency.
+- Refraction-like distortion.
+- Small ripples.
+- Different water depths.
+- Shoreline transitions.
+- Animated highlights.
+- Environmental color variation.
+
+Water must preserve the overall pixel-art aesthetic while allowing higher-resolution shader effects.
+
+Avoid simplistic repeating blue textures.
+
+### 8. Lighting and Shaders
+
+Lighting should be realistic without destroying pixel-art geometry.
+
+Use a separate rendering resolution for environmental effects when appropriate.
+
+Required effects:
+
+Global Illumination Approximation
+
+- Ambient environmental lighting.
+- Natural light distribution.
+- Subtle indirect illumination.
+
+Shadows
+
+- Soft environmental shadows.
+- Directional sunlight.
+- Tree canopy shadows.
+- Object-to-ground contact shadows.
+- Consistent light direction.
+
+Ambient Occlusion
+
+- Subtle darkening around objects.
+- Natural depth perception.
+- Avoid excessive black outlines.
+
+Sunlight
+
+- Directional light.
+- Warm and cool color temperature variation.
+- Light filtering through vegetation.
+- Subtle brightness variation.
+
+Atmospheric Effects
+
+- Environmental fog.
+- Distance-based atmospheric fading.
+- Subtle haze.
+- Optional light shafts through dense vegetation.
+
+All effects should be restrained and coherent.
+
+Do not make the scene look like a photograph or a conventional 3D game.
+
+### 9. Weather and Environmental Effects
+
+The environment should eventually support dynamic weather.
+
+Potential effects:
+
+- Rain.
+- Wet ground.
+- Water puddles.
+- Wind affecting vegetation.
+- Moving tree shadows.
+- Fog.
+- Atmospheric haze.
+- Changing sunlight intensity.
+
+Rain should interact visually with water surfaces and ground materials.
+
+Wet surfaces may become slightly darker and more reflective.
+
+Wind should create subtle movement without making every object constantly animate.
+
+### 10. Environmental Composition
+
+The world must feel naturally distributed rather than artificially assembled.
+
+Requirements:
+
+- Irregular forest density.
+- Natural clearings.
+- Small lakes and ponds.
+- Rivers and streams.
+- Rocky areas.
+- Open grasslands.
+- Dense vegetation clusters.
+- Natural transitions between biomes.
+
+Avoid perfectly symmetrical arrangements.
+
+Avoid obvious repeating patterns.
+
+Use variation in object density, scale and distribution.
+
+The environment should support procedural generation without looking procedurally repetitive.
+
+### 11. Animation
+
+Environmental animation should be subtle.
+
+Examples:
+
+- Moving grass.
+- Swaying foliage.
+- Water movement.
+- Animated flowers.
+- Rainfall.
+- Floating particles.
+- Subtle lighting changes.
+
+Animations must preserve the original sprite's pixel density and visual identity.
+
+Avoid excessive frame interpolation or blur.
+
+### 12. Asset Production Rules
+
+Every asset must follow the same visual language.
+
+When generating assets:
+
+- Use transparent backgrounds for isolated sprites.
+- Preserve consistent pixel density.
+- Avoid baked-in shadows when shadows will be generated dynamically.
+- Avoid baked-in lighting when dynamic lighting is expected.
+- Keep sprites compatible with sprite atlases and texture arrays.
+- Produce multiple variations where repetition would be visible.
+- Use coherent color palettes.
+- Maintain clean silhouettes.
+
+Tilesets must include appropriate edge and transition variants.
+
+Do not introduce inconsistent resolutions or unrelated artistic styles.
+
+Do not generate assets independently without checking how they look together in an actual environment.
+
+### 13. Technical Architecture — Rust Without a Game Engine
+
+The project must be implemented directly in Rust.
+
+Do not use Godot, Unity, Bevy or another complete game engine.
+
+A lightweight custom rendering architecture is preferred.
+
+Suggested Technologies
+
+- Rust: primary programming language.
+- wgpu: GPU abstraction and rendering.
+- winit: window management and input events.
+- WGSL: custom GPU shaders.
+- image: image loading and asset processing.
+- glam: vector and matrix mathematics.
+- Kira: optional audio library, only when audio implementation becomes necessary.
+
+These are suggested tools, not mandatory dependencies.
+
+Evaluate dependencies before introducing them.
+
+Avoid unnecessary libraries and excessive abstraction.
+
+Rendering Architecture
+
+Separate the rendering system into distinct layers.
+
+A. Pixel-Art World Layer
+
+Responsible for:
+
+- Terrain.
+- Trees.
+- Rocks.
+- Vegetation.
+- Environmental objects.
+- Sprite animations.
+
+This layer should preserve the intended pixel density and crisp visual appearance.
+
+B. Environmental Rendering Layer
+
+Responsible for:
+
+- Lighting.
+- Shadows.
+- Ambient occlusion.
+- Water effects.
+- Fog.
+- Weather.
+- Environmental post-processing.
+
+This layer may render at native display resolution while the world layer maintains its own logical resolution.
+
+C. Presentation Layer
+
+Responsible for:
+
+- Combining rendering layers.
+- Final compositing.
+- Upscaling.
+- Display output.
+
+Avoid indiscriminate smoothing of the pixel-art layer.
+
+Code Organization
+
+Keep the project modular and maintainable.
+
+Suggested initial organization:
+
+- `src/main.rs`
+- `src/app/`
+- `src/renderer/`
+- `src/camera/`
+- `src/world/`
+- `src/assets/`
+- `src/math/`
+- `shaders/`
+- `assets/`
+- `ART_DIRECTION.md`
+
+The structure may evolve as the implementation requires.
+
+Do not create empty modules or unnecessary abstractions prematurely.
+
+Keep individual functions reasonably small and responsibilities clear.
+
+Performance
+
+- Use GPU rendering for the main rendering pipeline.
+- Avoid unnecessary CPU-side pixel processing every frame.
+- Avoid excessive draw calls.
+- Use texture atlases where appropriate.
+- Avoid unnecessary memory allocations in the render loop.
+- Keep the architecture scalable for larger environments.
+- Profile before introducing complex optimizations.
+
+The target is smooth performance on ordinary desktop hardware, including systems without dedicated GPUs.
+
+### 14. Development Roadmap — Strict Phased Execution
+
+Development must follow the phases below.
+
+Complete only one phase at a time.
+
+Do not implement future phases prematurely.
+
+After each phase, run the project, verify the result, report what works and stop for approval.
+
+#### Phase 1 — Rendering Foundation
+
+Objective: establish a working custom Rust rendering foundation.
+
+Tasks:
+
+- Inspect the existing repository before making changes.
+- Understand the existing structure and constraints.
+- Establish the Rust application architecture.
+- Configure the window and event loop.
+- Initialize GPU rendering.
+- Implement the camera and basic top-down orthographic projection.
+- Establish the pixel-art rendering pipeline.
+- Define a consistent logical pixel density.
+- Implement nearest-neighbor upscaling.
+- Establish the architecture needed to support a separate environmental rendering layer later.
+- Render a basic terrain scene with clearly identifiable test graphics.
+- Verify correct scaling, alignment and pixel sharpness.
+
+Deliverable:
+
+A working application displaying a basic top-down pixel-art environment.
+
+Acceptance criteria:
+
+- The application compiles and runs.
+- The window opens correctly.
+- The camera works.
+- The rendering pipeline produces a stable image.
+- Pixel boundaries remain crisp when upscaled.
+- The scene does not blur or distort when the window is resized.
+- The architecture can accommodate additional rendering layers.
+
+Do not implement advanced lighting, water, procedural forests or weather in this phase.
+
+Stop after Phase 1 and wait for approval.
+
+#### Phase 2 — Terrain and Asset Pipeline
+
+Objective: establish the asset pipeline and basic terrain rendering.
+
+Tasks:
+
+- Implement sprite and texture loading.
+- Establish texture atlases where appropriate.
+- Implement terrain rendering.
+- Support different terrain materials.
+- Establish asset metadata and organization.
+- Support different sprite dimensions without inconsistent pixel density.
+- Implement basic terrain transitions.
+- Test asset consistency and visual quality.
+
+Deliverable:
+
+A coherent terrain scene with grass, dirt, stone and sand.
+
+Acceptance criteria:
+
+- Assets load reliably.
+- Different terrain materials are distinguishable.
+- Terrain transitions work.
+- Pixel density remains consistent.
+- Assets can be added without modifying the rendering architecture.
+
+Stop after Phase 2 and wait for approval.
+
+#### Phase 3 — Vegetation and Environmental Composition
+
+Objective: create a visually convincing natural environment.
+
+Tasks:
+
+- Implement trees, bushes, grass and other vegetation.
+- Introduce multiple asset variations.
+- Implement environmental object placement.
+- Introduce natural density variation.
+- Support irregular natural compositions.
+- Test different environmental arrangements.
+
+Deliverable:
+
+A visually convincing top-down forest environment.
+
+Acceptance criteria:
+
+- Vegetation has consistent visual style.
+- Repetition is minimized.
+- Objects maintain correct scale and pixel density.
+- The forest feels organic rather than grid-based.
+
+Stop after Phase 3 and wait for approval.
+
+#### Phase 4 — Lighting and Shadows
+
+Objective: introduce sophisticated environmental lighting.
+
+Tasks:
+
+- Implement environmental lighting.
+- Add directional sunlight.
+- Implement soft shadows.
+- Add ambient occlusion approximations.
+- Introduce contact shadows.
+- Separate lighting resolution from pixel-art resolution where appropriate.
+- Ensure lighting does not compromise pixel-art geometry.
+
+Deliverable:
+
+A forest scene with sophisticated, realistic environmental lighting.
+
+Acceptance criteria:
+
+- Light direction is coherent.
+- Shadows respond appropriately to objects.
+- Pixel-art textures remain crisp.
+- Lighting creates depth without making the world look 3D.
+
+Stop after Phase 4 and wait for approval.
+
+Use the reference image as the lighting target: warm shafts through canopy, cool shadow wells, wet-path highlights, optional torch as a point light later. Do not copy photographic 3D.
+
+#### Phase 5 — Water and Atmospheric Effects
+
+Objective: create sophisticated environmental rendering.
+
+Tasks:
+
+- Implement animated water.
+- Add reflections, ripples and distortion.
+- Introduce shoreline effects.
+- Add fog and atmospheric effects.
+- Test different rendering resolutions for environmental effects.
+- Ensure environmental shaders remain visually consistent with the art direction.
+
+Deliverable:
+
+A natural environment with convincing water and atmospheric rendering.
+
+Acceptance criteria:
+
+- Water animation is smooth.
+- Water integrates with surrounding terrain.
+- Atmospheric effects do not blur the pixel-art world.
+- Effects remain performant.
+
+Stop after Phase 5 and wait for approval.
+
+#### Phase 6 — Environmental Animation and Weather
+
+Objective: make the environment feel alive.
+
+Tasks:
+
+- Implement wind.
+- Animate vegetation.
+- Add environmental particles.
+- Implement rain.
+- Implement wet-surface effects.
+- Introduce weather-related lighting variations.
+- Add subtle atmospheric animation.
+
+Deliverable:
+
+A living, animated wilderness with environmental variation.
+
+Acceptance criteria:
+
+- Animations are subtle and coherent.
+- Vegetation responds naturally to wind.
+- Rain interacts visually with the environment.
+- No unnecessary animation artifacts appear.
+
+Stop after Phase 6 and wait for approval.
+
+The reference image’s rain streaks and wet cobble highlights are the weather target.
+
+#### Phase 7 — Visual Consistency and Optimization
+
+Objective: consolidate and optimize the visual foundation.
+
+Tasks:
+
+- Review all assets against art direction in this plan / `ART_DIRECTION.md` if it exists.
+- Identify inconsistent pixel densities.
+- Fix visual artifacts.
+- Review rendering architecture.
+- Optimize GPU rendering where necessary.
+- Profile performance.
+- Reduce unnecessary allocations and draw calls.
+- Remove redundant code and dependencies.
+- Document important rendering decisions.
+
+Deliverable:
+
+A cohesive, optimized visual foundation ready for subsequent gameplay development.
+
+Acceptance criteria:
+
+- Consistent artistic direction.
+- Stable rendering.
+- No major visual artifacts.
+- Maintainable architecture.
+- Documented implementation decisions.
+
+Stop after Phase 7 and wait for approval.
+
+### 15. Development Rules
+
+These rules apply throughout the project.
+
+1. Complete one phase before starting the next.
+2. Start with Phase 1 only.
+3. Do not implement future phases prematurely.
+4. Keep the project runnable throughout development.
+5. Use small, maintainable Rust modules.
+6. Avoid unnecessary dependencies.
+7. Do not replace existing architecture without a concrete reason.
+8. Document important rendering decisions.
+9. Test each phase visually, not only through compilation.
+10. Do not generate placeholder implementations that pretend to provide effects that are not actually implemented.
+11. Respect the artistic direction in every visual decision.
+12. Avoid unnecessary abstractions and speculative systems.
+13. Prioritize a working implementation over excessive architecture.
+14. Do not introduce gameplay systems unrelated to the current phase.
+15. Do not continue automatically after completing a phase.
+
+Phase Completion Report
+
+At the end of each phase, provide:
+
+- Summary of implemented features.
+- Important files created or modified.
+- Dependencies introduced and why.
+- Build and execution results.
+- Visual verification results.
+- Known limitations.
+- Any architectural decisions affecting future phases.
+
+Then stop and wait for explicit approval.
+
+### 16. Final Visual Objective
+
+The final result should resemble a high-definition pixel-art natural world with sophisticated environmental rendering.
+
+The player should feel as though they are exploring a living wilderness.
+
+The terrain and objects should look handcrafted, detailed and cohesive.
+
+Water, sunlight, shadows and atmosphere should provide realism without turning the scene into a photograph or a conventional 3D game.
+
+---
+
+## Arquitectura prevista (Phase 1)
+
+No crear módulos vacíos. Solo lo que Phase 1 necesite:
+
+```
+Zaralle/
+  plan.md
+  Cargo.toml
+  src/main.rs
+  src/app.rs          # winit ApplicationHandler
+  src/renderer.rs     # wgpu: world target + present
+  src/camera.rs       # ortho top-down, pan
+  shaders/world.wgsl
+  shaders/present.wgsl
+  assets/reference/
+```
+
+Pipeline:
+
+1. **World layer** — render a textura `640×360`, sampler nearest, tiles 32×32 de prueba.
+2. **Present layer** — blit nearest-neighbor, escala entera, letterbox. Aquí se enganchará luego la capa ambiental a resolución nativa.
+3. Cámara ortográfica en píxeles de mundo. WASD para comprobar el pan.
+
+Gráficos de Phase 1: patrón de prueba honesto (hierba / tierra / sendero generados en código). No fingir lighting, agua ni clima.
+
+---
+
+## Estado
+
+| Item | Estado |
+| --- | --- |
+| Workspace Zaralle | hecho |
+| Repo GitHub renombrado y vaciado | hecho (`main`) |
+| Referencia copiada a `assets/reference/` | hecho |
+| Este `plan.md` | hecho |
+| Pixler MCP | pendiente de token `pxl_live_...` |
+| Código Rust Phase 1 | no empezado |
+| Phases 2–7 | bloqueadas hasta aprobar la anterior |
+
+Cuando termine Phase 1, el informe de cierre va en la siguiente sección.
+
+---
+
+## Informe de fases
+
+_(vacío hasta completar Phase 1)_
