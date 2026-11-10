@@ -6,7 +6,17 @@ Phase 1 is a pixel-art terrain test: 640×360 logical resolution, 32×32 tiles, 
 
 ## How to run (Phase 1)
 
-Needs [Rust](https://rustup.rs/) (this machine has 1.96).
+Needs [Rust](https://rustup.rs/) 1.96 and a C linker.
+
+This PC has no Visual Studio `link.exe`. Use MinGW (w64devkit) plus the `zaralle-gnu` rustup toolchain:
+
+```powershell
+$env:Path = "C:\Users\mario\w64devkit\bin;" + $env:Path
+cd C:\Users\mario\workplace\Zaralle
+cargo +zaralle-gnu run --release
+```
+
+If you have MSVC Build Tools instead:
 
 ```powershell
 cd C:\Users\mario\workplace\Zaralle

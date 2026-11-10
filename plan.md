@@ -5,7 +5,7 @@ Documento vivo. Aquí va el prompt original, la referencia visual, qué hay que 
 **Workspace:** `C:\Users\mario\workplace\Zaralle`  
 **Repo:** https://github.com/MarioJoseMelendez/Zaralle  
 **Motor:** Rust directo, sin Godot / Unity / Bevy.  
-**Fase actual:** 1 — Rendering Foundation (aún no implementada)
+**Fase actual:** 1 — Rendering Foundation (compila; falta tu OK visual)
 
 ---
 
@@ -867,7 +867,7 @@ Gráficos de Phase 1: patrón de prueba honesto (hierba / tierra / sendero gener
 | Referencia copiada a `assets/reference/` | hecho |
 | Este `plan.md` | hecho |
 | Pixler MCP | pendiente de token `pxl_live_...` |
-| Código Rust Phase 1 | no empezado |
+| Código Rust Phase 1 | compilado (`wgpu` + `winit`, target `x86_64-pc-windows-gnu`) |
 | Phases 2–7 | bloqueadas hasta aprobar la anterior |
 
 Cuando termine Phase 1, el informe de cierre va en la siguiente sección.
@@ -876,4 +876,28 @@ Cuando termine Phase 1, el informe de cierre va en la siguiente sección.
 
 ## Informe de fases
 
-_(vacío hasta completar Phase 1)_
+### Phase 1 — Rendering Foundation
+
+**Estado:** código listo y **compila**. Parado a la espera de tu aprobación visual. No se empezó Phase 2.
+
+**Qué hay:**
+
+- App Rust (`winit` 0.30 + `wgpu` 30), sin Godot / Unity / Bevy.
+- Cámara top-down ortográfica, pan con WASD / flechas, Escape sale.
+- Mundo lógico 640×360, tiles 32×32, upscale nearest-neighbor a escala entera + letterbox.
+- Offscreen world target → present pass (hueco para la capa ambiental).
+- Terreno de prueba generado en código: hierba A/B, tierra, piedra; sendero de 3 tiles.
+
+**Cómo probarlo (esta máquina, sin Visual Studio):**
+
+```powershell
+$env:Path = "C:\Users\mario\w64devkit\bin;" + $env:Path
+cd C:\Users\mario\workplace\Zaralle
+cargo +zaralle-gnu run --release
+```
+
+Ventana **Zaralle — Phase 1** a 1280×720. Comprueba píxeles nítidos al redimensionar, letterbox si no es múltiplo de 640×360, y que el sendero se vea al mover la cámara.
+
+**Toolchain local:** `rustc` GNU 1.96 (`zaralle-gnu`) + w64devkit gcc. El host MSVC no tiene `link.exe`.
+
+**Pixler:** sigue sin token; Phase 1 usa gráficos de prueba.

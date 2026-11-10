@@ -15,6 +15,7 @@ struct CameraUniform {
 }
 
 pub struct Renderer {
+    #[allow(dead_code)]
     pub window: Arc<Window>,
     surface: wgpu::Surface<'static>,
     device: wgpu::Device,
@@ -39,9 +40,9 @@ impl Renderer {
         let width = size.width.max(1);
         let height = size.height.max(1);
 
-        let instance = wgpu::Instance::new(&wgpu::InstanceDescriptor {
+        let instance = wgpu::Instance::new(wgpu::InstanceDescriptor {
             backends: wgpu::Backends::PRIMARY,
-            ..Default::default()
+            ..wgpu::InstanceDescriptor::new_without_display_handle()
         });
         let surface = instance
             .create_surface(window.clone())
@@ -187,16 +188,14 @@ impl Renderer {
         let world_pipeline_layout =
             device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
                 label: Some("world-pipeline-layout"),
-                bind_group_layouts: &[&world_bind_layout],
-                push_constant_ranges: &[],
-                ..Default::default()
+                bind_group_layouts: &[Some(&world_bind_layout)],
+                immediate_size: 0,
             });
         let present_pipeline_layout =
             device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
                 label: Some("present-pipeline-layout"),
-                bind_group_layouts: &[&present_bind_layout],
-                push_constant_ranges: &[],
-                ..Default::default()
+                bind_group_layouts: &[Some(&present_bind_layout)],
+                immediate_size: 0,
             });
 
         let vertex_layout = wgpu::VertexBufferLayout {
@@ -216,7 +215,7 @@ impl Renderer {
             vertex: wgpu::VertexState {
                 module: &world_shader,
                 entry_point: Some("vs_main"),
-                buffers: &[vertex_layout, instance_layout],
+                buffers: &[Some(vertex_layout), Some(instance_layout)],
                 compilation_options: Default::default(),
             },
             fragment: Some(wgpu::FragmentState {
@@ -236,7 +235,8 @@ impl Renderer {
             },
             depth_stencil: None,
             multisample: wgpu::MultisampleState::default(),
-            ..Default::default()
+            multiview_mask: None,
+            cache: None,
         });
 
         let present_pipeline = device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
@@ -265,7 +265,8 @@ impl Renderer {
             },
             depth_stencil: None,
             multisample: wgpu::MultisampleState::default(),
-            ..Default::default()
+            multiview_mask: None,
+            cache: None,
         });
 
         let vertices = world::quad_vertices();
@@ -403,7 +404,7 @@ impl Renderer {
         }
 
         self.queue.submit(std::iter::once(encoder.finish()));
-        self.queue.present(frame)?;
+        self.queue.present(frame);
         Ok(())
     }
 }
