@@ -1,0 +1,11 @@
+{
+  "sprites": [
+    { "id": "grass_a", "file": "grass_a.png", "role": "terrain" },
+    { "id": "grass_b", "file": "grass_b.png", "role": "terrain" },
+    { "id": "dirt", "file": "dirt.png", "role": "terrain" },
+    { "id": "stone", "file": "stone.png", "role": "terrain" },
+    { "id": "sand", "file": "sand.png", "role": "terrain" },
+    { "id": "pebble", "file": "pebble.png", "role": "decal" },
+    { "id": "tuft", "file": "tuft.png", "role": "decal" }
+  ]
+}

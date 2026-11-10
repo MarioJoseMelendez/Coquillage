@@ -24,6 +24,7 @@ pub struct Renderer {
     surface_configured: bool,
     _world_texture: wgpu::Texture,
     world_view: wgpu::TextureView,
+    _atlas_texture: wgpu::Texture,
     camera_buffer: wgpu::Buffer,
     world_bind_group: wgpu::BindGroup,
     present_bind_group: wgpu::BindGroup,
@@ -84,14 +85,14 @@ impl Renderer {
         config.usage = wgpu::TextureUsages::RENDER_ATTACHMENT;
 
         let (world_texture, world_view) = create_world_target(&device);
-        let (atlas_pixels, atlas_width, atlas_height) = world::atlas_rgba();
+        let terrain = world::build().context("build terrain atlas from PNG assets")?;
         let atlas_texture = device.create_texture_with_data(
             &queue,
             &wgpu::TextureDescriptor {
                 label: Some("tile-atlas"),
                 size: wgpu::Extent3d {
-                    width: atlas_width,
-                    height: atlas_height,
+                    width: terrain.atlas.width,
+                    height: terrain.atlas.height,
                     depth_or_array_layers: 1,
                 },
                 mip_level_count: 1,
@@ -102,7 +103,7 @@ impl Renderer {
                 view_formats: &[],
             },
             wgpu::util::TextureDataOrder::LayerMajor,
-            &atlas_pixels,
+            &terrain.atlas.pixels,
         );
         let atlas_view = atlas_texture.create_view(&wgpu::TextureViewDescriptor::default());
 
@@ -206,7 +207,7 @@ impl Renderer {
         let instance_layout = wgpu::VertexBufferLayout {
             array_stride: std::mem::size_of::<Instance>() as u64,
             step_mode: wgpu::VertexStepMode::Instance,
-            attributes: &wgpu::vertex_attr_array![2 => Float32x2, 3 => Float32x2],
+            attributes: &wgpu::vertex_attr_array![2 => Float32x2, 3 => Float32x2, 4 => Float32x2],
         };
 
         let world_pipeline = device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
@@ -223,7 +224,7 @@ impl Renderer {
                 entry_point: Some("fs_main"),
                 targets: &[Some(wgpu::ColorTargetState {
                     format: wgpu::TextureFormat::Rgba8UnormSrgb,
-                    blend: None,
+                    blend: Some(wgpu::BlendState::ALPHA_BLENDING),
                     write_mask: wgpu::ColorWrites::ALL,
                 })],
                 compilation_options: Default::default(),
@@ -275,7 +276,7 @@ impl Renderer {
             contents: bytemuck::cast_slice(&vertices),
             usage: wgpu::BufferUsages::VERTEX,
         });
-        let instances = world::instances();
+        let instances = terrain.instances;
         let instance_count = instances.len() as u32;
         let instance_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
             label: Some("tile-instances"),
@@ -292,6 +293,7 @@ impl Renderer {
             surface_configured: false,
             _world_texture: world_texture,
             world_view,
+            _atlas_texture: atlas_texture,
             camera_buffer,
             world_bind_group,
             present_bind_group,

@@ -5,7 +5,7 @@ Documento vivo. Aquí va el prompt original, la referencia visual, qué hay que 
 **Workspace:** `C:\Users\mario\workplace\Zaralle`  
 **Repo:** https://github.com/MarioJoseMelendez/Zaralle  
 **Motor:** Rust directo, sin Godot / Unity / Bevy.  
-**Fase actual:** 1 — Rendering Foundation (compila; falta tu OK visual)
+**Fase actual:** 2 — Terrain and Asset Pipeline (compila; falta tu OK visual)
 
 ---
 
@@ -17,15 +17,14 @@ Documento vivo. Aquí va el prompt original, la referencia visual, qué hay que 
 4. Guardar el progreso de cada fase en este archivo.
 5. Pixler MCP: instalarlo cuando exista el token `pxl_live_...` en `~/.cursor/mcp.json`. Phase 1 usa gráficos de prueba, no assets de Pixler.
 
-### Ahora mismo (Phase 1)
+### Ahora mismo (Phase 2)
 
-- App Rust + `winit` + `wgpu`.
-- Cámara top-down ortográfica.
-- Mundo pixel-art a resolución lógica fija, upscale nearest-neighbor (escala entera, letterbox).
-- Arquitectura lista para una capa ambiental posterior (offscreen world → present).
-- Escena de terreno básica con gráficos de prueba identificables.
-- Compilar, abrir ventana, comprobar que los píxeles siguen nítidos al redimensionar.
-- Parar. No Phase 2.
+- Cargar PNG de terreno desde `assets/terrain/` + `manifest.json`.
+- Atlas empaquetado en runtime; decals 16×16 a la misma densidad de píxel que los tiles 32×32.
+- Materiales distinguibles: hierba A/B, tierra, piedra, arena.
+- Transiciones automáticas en los bordes (dither por vecino).
+- Añadir un PNG + entrada en el manifiesto no toca el renderer.
+- Parar. No Phase 3 (vegetación).
 
 ### Herramientas previstas (evaluar al usarlas)
 
@@ -867,8 +866,9 @@ Gráficos de Phase 1: patrón de prueba honesto (hierba / tierra / sendero gener
 | Referencia copiada a `assets/reference/` | hecho |
 | Este `plan.md` | hecho |
 | Pixler MCP | pendiente de token `pxl_live_...` |
-| Código Rust Phase 1 | compilado (`wgpu` + `winit`, target `x86_64-pc-windows-gnu`) |
-| Phases 2–7 | bloqueadas hasta aprobar la anterior |
+| Código Rust Phase 1 | hecho (aprobado al pedir Phase 2) |
+| Código Rust Phase 2 | compilado (`image` + atlas PNG, target GNU) |
+| Phases 3–7 | bloqueadas hasta aprobar la anterior |
 
 Cuando termine Phase 1, el informe de cierre va en la siguiente sección.
 
@@ -901,3 +901,30 @@ Ventana **Zaralle — Phase 1** a 1280×720. Comprueba píxeles nítidos al redi
 **Toolchain local:** `rustc` GNU 1.96 (`zaralle-gnu`) + w64devkit gcc. El host MSVC no tiene `link.exe`.
 
 **Pixler:** sigue sin token; Phase 1 usa gráficos de prueba.
+
+### Phase 2 — Terrain and Asset Pipeline
+
+**Estado:** código listo. Parado a la espera de tu aprobación visual. No se empezó Phase 3.
+
+**Qué hay:**
+
+- PNG en `assets/terrain/` (hierba A/B, tierra, piedra, arena 32×32; pebble y tuft 16×16).
+- `manifest.json` como catálogo. El renderer solo recibe atlas + instancias.
+- Atlas packed en runtime (`src/assets.rs`). Transiciones baked por vecindario 4-dir (`src/world.rs`).
+- Mapa: pradera, sendero de tierra/piedra, dos claros de arena.
+- Decals de 16×16 encima, misma densidad (1 px de sprite = 1 px de mundo).
+- Dependencia nueva: `image` (PNG) y `serde_json` (manifiesto).
+
+**Cómo probarlo:**
+
+```powershell
+$env:Path = "C:\Users\mario\w64devkit\bin;" + $env:Path
+cd C:\Users\mario\workplace\Zaralle
+cargo +zaralle-gnu run --release
+```
+
+Ventana **Zaralle — Phase 2**. Recorre con WASD: hierba, sendero, piedra, arena, bordes mezclados, pebbles/tufts nítidos al redimensionar.
+
+**Limitaciones:** transiciones son dither de borde, no autotile blob de 16 variantes. Vegetación grande es Phase 3. Pixler sigue fuera.
+
+**Arquitectura para fases siguientes:** sprites nuevos = PNG + fila en el manifiesto. El present pass no cambió.
