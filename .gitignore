@@ -1,0 +1,10 @@
+.DS_Store
+Thumbs.db
+.env
+.env.*
+*.pyc
+__pycache__/
+node_modules/
+dist/
+build/
+.cursor/mcp.json
