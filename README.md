@@ -2,9 +2,9 @@
 
 Top-down wilderness sandbox. Custom Rust renderer (`wgpu` + `winit`), no game engine.
 
-Phase 3 is a forest floor: terrain PNGs plus top-down tree canopies, bushes, ferns, flowers and mushrooms. Logical resolution 640×360, nearest-neighbor integer upscale. 1 sprite pixel = 1 world pixel.
+Phase 8 is the player: walk the forest, collide with water and trunks, ghost the canopy you are under. Logical resolution 640×360.
 
-## How to run (Phase 3)
+## How to run (Phase 8)
 
 Needs [Rust](https://rustup.rs/) 1.96 and a C linker.
 
@@ -16,29 +16,23 @@ cd C:\Users\mario\workplace\Zaralle
 cargo +zaralle-gnu run --release
 ```
 
-If you have MSVC Build Tools instead:
-
-```powershell
-cd C:\Users\mario\workplace\Zaralle
-cargo run --release
-```
-
-A window titled **Zaralle — Phase 3** should open at 1280×720 (2× scale).
+A window titled **Zaralle — Phase 8** should open at 1280×720 (2× scale). The title shows FPS once per second.
 
 | Input | Action |
 | --- | --- |
-| W A S D or arrows | Pan the camera |
+| W A S D or arrows | Walk |
+| Q / E | Skip 1 hour |
+| R | Toggle rain |
 | Escape | Quit |
-| Resize the window | Integer nearest-neighbor scale + letterbox |
 
 What you should see:
 
-- Winding stone path with forest crowding the sides
-- Irregular tree canopies (top-down, not side-on)
-- Bushes, ferns, flowers; sand clearings more open
-- Sharp pixels after resize
+- A small cloaked figure, viewed from above (head and shoulders, no face)
+- You stop at water and tree trunks; grass and bushes you can cross
+- Walking under a canopy fades **that** tree only
+- Camera follows with a little slack, still pixel-snapped
 
-Stop after checking that. Phase 4 (lighting) is not in yet.
+Stop after checking that. Audio is Phase 9.
 
 ```powershell
 python tools/gen_tiles.py

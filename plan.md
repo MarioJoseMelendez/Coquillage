@@ -5,7 +5,7 @@ Documento vivo. Aquí va el prompt original, la referencia visual, qué hay que 
 **Workspace:** `C:\Users\mario\workplace\Zaralle`  
 **Repo:** https://github.com/MarioJoseMelendez/Zaralle  
 **Motor:** Rust directo, sin Godot / Unity / Bevy.  
-**Fase actual:** 3 — Vegetation (compila; falta tu OK visual)
+**Fase actual:** 8 — Player (compila; falta tu OK visual)
 
 ---
 
@@ -16,14 +16,23 @@ Documento vivo. Aquí va el prompt original, la referencia visual, qué hay que 
 3. Toda decisión de iluminación y tamaño de sprites se ancla a la imagen de referencia de abajo (mood y escala), con cámara **top-down ortográfica estricta** (la referencia es 3/4; no copiamos ese ángulo).
 4. Guardar el progreso de cada fase en este archivo.
 5. Pixler MCP: instalarlo cuando exista el token `pxl_live_...` en `~/.cursor/mcp.json`. Phase 1 usa gráficos de prueba, no assets de Pixler.
-6. **Cobertura / fade:** si el jugador queda debajo de un objeto que lo tapa (copa de árbol, arbusto grande), **solo ese objeto** se vuelve semitransparente (efecto de invisibilidad / ghost). El resto del bosque no cambia. Sin blur: es alfa, los píxeles siguen nítidos. Cuando exista sprite de jugador se usa su posición; hasta entonces el probe es el centro de la cámara.
+6. **Cobertura / fade:** si el jugador queda debajo de un objeto que lo tapa (copa de árbol, arbusto grande), **solo ese objeto** se vuelve semitransparente (efecto de invisibilidad / ghost). El resto del bosque no cambia. Sin blur: es alfa, los píxeles siguen nítidos. **Apagado hasta que exista el jugador:** el probe en el centro de la cámara ghosteaba lo que mirabas (copa semitransparente + sombra opaca = “roca y arbusto” pegados al centro).
 
-### Ahora mismo (Phase 3)
+### Ahora mismo (Phase 8 — player)
 
-- Árboles top-down **legibles**: tronco (anillos tipo log de Minecraft) + ramas + copas en las puntas, no un blob verde.
-- Texturas estilo HD Minecraft: pocas formas grandes, no píxeles al azar.
-- Fade del objeto que cubre al probe (centro de cámara / futuro jugador).
-- Parar. No Phase 4 (luz).
+- Phase 1–7 **aprobadas** (fundación visual).
+- Jugador top-down 16×16, WASD, colisión agua/troncos, cámara follow, fade de copa.
+- Parar y esperar OK visual. No Phase 9.
+
+### Fases que faltan (después de la 7)
+
+El spec original **terminaba en Phase 7**. Lo que sigue es gameplay, numerado ahora:
+
+| Fase | Qué añade |
+| --- | --- |
+| **8 Player** (esta) | Avatar, caminar, colisión 16×16, cámara, ghost de copa |
+| **9 Audio** | Lluvia / viento / pasos (`kira` si hace falta) |
+| Más adelante (cuando lo pidas) | Capas subterráneas, antorcha puntual, assets Pixler |
 
 ### Herramientas previstas (evaluar al usarlas)
 
@@ -43,12 +52,19 @@ Toolchain local ya vista: `rustc` / `cargo` 1.96.0.
 
 ## Referencia visual
 
-Archivo: [`assets/reference/wilderness-lighting-sprites.jpg`](assets/reference/wilderness-lighting-sprites.jpg)
+**Primarias (mandan, en este orden):**
 
-La imagen define **iluminación y tamaños**, no la cámara. El spec exige top-down ortográfico puro, sin isométrico ni objetos “de 3D”. En la referencia hay un leve 3/4 (troncos, rayos, figuras de lado). Eso se traduce así:
+1. [`assets/reference/minecraft-hd-lighting.jpg`](assets/reference/minecraft-hd-lighting.jpg) — sol cálido, hojas en manchas, sombras frías. También el mood del shader.
+2. [`assets/reference/wilderness-lighting-sprites.jpg`](assets/reference/wilderness-lighting-sprites.jpg) — bosque HD, sendero, dosel.
+3. [`assets/reference/slynyrd-conifer-topdown.png`](assets/reference/slynyrd-conifer-topdown.png) — método de pino top-down: **módulos de follaje apilados**, no radios.
 
-- **Cámara del juego:** mirada vertical, escala constante, árboles leíbles desde arriba (copa, no alzado).
-- **De la imagen sí se copia:** densidad HD, paleta, mood de luz, tamaños relativos, composición orgánica del bosque.
+**Apoyo (forma de copa, no cámara):** [`topdown-map-canopies.png`](assets/reference/topdown-map-canopies.png). El sheet 3/4 [`tree-sheet-34-view.png`](assets/reference/tree-sheet-34-view.png) solo para densidad; no copiar alzado ni el asset. Construcción Slynyrd 160: [`slynyrd-isometric-tree.png`](assets/reference/slynyrd-isometric-tree.png) — anillos de color, copa de brócoli, tocón+raíces; **no** el ángulo isométrico.
+
+**Qué no repetir:** [`current-look-avoid.png`](assets/reference/current-look-avoid.png) — árboles-estrella, hongos de confeti, rejilla naranja.
+
+Biblia de color / anti-slop: [`assets/reference/pixel-art-bible.md`](assets/reference/pixel-art-bible.md) (Saint11, hue shift, Essence24 / Purple Sunset, Slynyrd).
+
+La cámara sigue **top-down ortográfica estricta**. De las refs se copia paleta, luz, tamaños y método de copa, no el ángulo 3/4.
 
 ### Iluminación (de la imagen → Phase 4+, no implementar ahora)
 
@@ -58,7 +74,7 @@ La imagen define **iluminación y tamaños**, no la cámara. El spec exige top-d
 - Suelo en sombra: verde-azul frío, saturación baja.
 - Sendero iluminado: marrones cálidos, adoquines con highlight de humedad.
 - Luz local de antorcha: naranja puntual, bloom corto (lenguaje de luz, no gameplay todavía).
-- Lluvia: trazos finos diagonales (Phase 6).
+- Lluvia: trazos finos que caen (Phase 6).
 - No fotorealismo 3D. La geometría pixel-art sigue nítida; la luz es una capa aparte a resolución de display.
 
 ### Tamaños de sprites (de la imagen + tabla del spec)
@@ -77,7 +93,7 @@ Resolución lógica prevista: **640×360**. Tile base: **32×32**. Upscale neare
 
 Sprites aislados: fondo transparente, sin sombra ni lighting horneados (la sombra irá en la capa ambiental). Varias variantes por categoría. Densidad de píxel constante aunque el canvas cambie de tamaño.
 
-Lenguaje de textura: **Minecraft HD** (Faithful / vanilla 32px). Pocas formas grandes y paleta corta. Cero sal de píxeles. Árbol top-down = corte del tronco (anillos) + ramas que salen + hojas en las puntas.
+Lenguaje de textura: **Minecraft HD** (Faithful / vanilla 32px) + hue shift. Pocas formas grandes, paleta corta. Sombras **moradas**, luces amarillo-lima. Cero sal de píxeles. Árbol top-down = pads / manchas de copa (Slynyrd), tronco entre capas, **prohibido** rueda de radios.
 
 ### Cobertura del jugador (obligatorio)
 
@@ -95,8 +111,8 @@ El juego **detecta** cuando el jugador está debajo de un objeto que lo tapa (co
 - Marrones tierra y sendero húmedo.
 - Grises piedra con highlight cálido.
 - Azul-verde frío en sombra y lluvia.
-- Sol: amarillo sucio, no neón.
-- Evitar verdes chillones y saturación alta.
+- Sol: amarillo sucio, no neón. Luces giran hacia amarillo; sombras hacia **morado**.
+- Evitar verdes chillones, sombreado a gris, y saturación alta en el highlight.
 
 ---
 
@@ -692,6 +708,7 @@ Tasks:
 - Implement soft shadows.
 - Add ambient occlusion approximations.
 - Introduce contact shadows.
+- **Sombras dinámicas de vegetación:** pasto corto vs pasto alto. Un uniform `sun_dir` desplaza manchas moradas en el suelo; el pasto alto proyecta un blob más largo al SE, el corto uno chico. Árboles y arbustos usan el mismo sistema (hoy las sombras de contacto están horneadas / instanciadas fijas). Sin blur 3D: sprites o atlas de sombra nearest-neighbor.
 - Separate lighting resolution from pixel-art resolution where appropriate.
 - Ensure lighting does not compromise pixel-art geometry.
 
@@ -795,6 +812,23 @@ Acceptance criteria:
 
 Stop after Phase 7 and wait for approval.
 
+#### Phase 8 — Player
+
+Objective: put a wanderer in the wilderness.
+
+Tasks:
+
+- True 90° player sprite (head/shoulders, no 3/4 face).
+- WASD movement with AABB vs water and trunks (X then Y).
+- Camera deadzone follow, pixel snap.
+- Cover fade: only the canopy over the player.
+
+Stop after Phase 8 and wait for approval.
+
+#### Phase 9 — Audio
+
+Objective: hear the forest. Rain, wind, footsteps. Not this phase.
+
 ### 15. Development Rules
 
 These rules apply throughout the project.
@@ -880,8 +914,13 @@ Gráficos de Phase 1: patrón de prueba honesto (hierba / tierra / sendero gener
 | Pixler MCP | pendiente de token `pxl_live_...` |
 | Código Rust Phase 1 | hecho (aprobado al pedir Phase 2) |
 | Código Rust Phase 2 | hecho (aprobado al pedir seguir) |
-| Código Rust Phase 3 | compilado (props PNG, colocación irregular) |
-| Phases 4–7 | bloqueadas hasta aprobar la anterior |
+| Código Rust Phase 3 | hecho (aprobado al pedir Phase 4) |
+| Código Rust Phase 4 | hecho (aprobado) |
+| Código Rust Phase 5 | hecho (aprobado) |
+| Código Rust Phase 6 | hecho (aprobado al pedir Phase 7) |
+| Código Rust Phase 7 | hecho (aprobado al pedir Phase 8) |
+| Código Rust Phase 8 | player (falta OK visual) |
+| Phase 9 audio | bloqueada hasta aprobar Phase 8 |
 
 Cuando termine Phase 1, el informe de cierre va en la siguiente sección.
 
@@ -944,14 +983,77 @@ Ventana **Zaralle — Phase 2**. Recorre con WASD: hierba, sendero, piedra, aren
 
 ### Phase 3 — Vegetation and Environmental Composition
 
-**Estado:** código listo. Parado a la espera de tu OK visual. No se empezó Phase 4.
+**Estado:** **aprobada**. Arte Slynyrd + hierba alta/baja + tronco con volumen + sendero que tilea.
 
 **Qué hay:**
 
-- Árboles top-down con tronco (anillos), ramas y copas en las puntas (`tree_a/b/c`).
-- Arbustos, helechos, flores, hongos en `assets/props/`.
-- Fade ghost si el centro de la cámara (futuro jugador) entra bajo un árbol o arbusto.
+- Roble = copa de manchas; pino = pads apilados Slynyrd; abedul más claro. Tocón con raíces.
+- Césped de suelo + hierba corta/alta como plantas. Flores en clusters; hongos raros.
+- Cover fade apagado hasta que exista el jugador (el centro de cámara ghosteaba la copa y dejaba la sombra).
 
-**Cómo probarlo:** ventana **Zaralle — Phase 3**. Acércate a un árbol: tiene que leerse tronco + ramas. Camina “debajo”: esa copa se pone semitransparente.
+### Phase 4 — Lighting and Shadows
 
-**Limitaciones:** sin sprite de jugador todavía (el probe es la cámara). Sin luz (Phase 4).
+**Estado:** **aprobada** (siguiente fase).
+
+**Qué hay:**
+
+- Uniform `sun_dir`: hierba alta, helechos, arbustos y árboles proyectan blob morado que se mueve con el sol.
+- Present pass: hue-shift cálido/morado, AO direccional barato, shafts de 1px nearest-neighbor.
+- Q / E rotan el sol. Sin oscilación automática. Cover fade apagado hasta el jugador.
+- Pixel-art intacto: la luz es un multiply a 640×360, luego upscale entero.
+
+**Limitaciones:** no es un shadow map 3D. Shafts son bandas de 1px.
+
+### Phase 5 — Water and Atmospheric Effects
+
+**Estado:** aprobada (siguiente etapa).
+
+**Qué hay:**
+
+- Estanques (profundo / somero) con orilla de arena y labio de espuma, anclados a la grilla 16×16. El del centro está en la cámara inicial.
+- Tiles de terreno 32×32; cada uno son 4 celdas interactuables de 16×16. Arena entre agua y tierra.
+- Agua animada: overlay con alpha (la tierra no hereda el shimmer). Destellos de sol world-locked.
+- Haze frío en el present pass (mix de color, no desenfoque).
+- Maximize reconfigura el swapchain al tamaño real y usa la mayor escala entera.
+
+**Cómo probarlo:** ventana **Zaralle — Phase 5**. Busca el estanque teal, espera las ondas. Maximiza: el bosque debe crecer, no quedar un recuadro chico. Los píxeles siguen nítidos.
+
+**Limitaciones:** no hay reflexión de árboles en el agua (no hay buffer de reflexión).
+
+### Phase 6 — Environmental Animation and Weather
+
+**Estado:** **aprobada** (pedido de siguiente fase).
+
+**Qué hay:**
+
+- Viento: hierba, helechos, arbustos y copas se inclinan 1–2 px (más arriba). El suelo no se mueve.
+- Lluvia que cae (cabeza abajo, cola arriba), translúcida. Splash y suelo mojado en celdas descubiertas.
+- Ciclo día/noche con grade, sombras ovales y Q/E. **R** activa / desactiva lluvia.
+
+**Limitaciones:** no hay charcos persistentes ni física de gotas.
+
+### Phase 7 — Visual Consistency and Optimization
+
+**Estado:** código listo. Parado a la espera de tu OK visual.
+
+**Qué hay:**
+
+- Review de assets: sin sombra horneada donde ya hay blob dinámico; 1 px sprite = 1 px mundo.
+- Atlas: padding 1 px + extrusión de borde (anti-bleed, nearest, sin mips).
+- GPU: 2 draw calls. Solo se suben las instancias de sombra cada frame. Uniform de cámara si hubo pan.
+- Título con FPS una vez por segundo. Decisiones en `DEV.md` §18.
+
+**Cómo probarlo:** ventana **Zaralle — Phase 7**. Recorre el bosque: nada de hierba encima de copas, sombras de un solo blob, título ~60 fps. Q/E y R siguen igual.
+
+### Phase 8 — Player
+
+**Estado:** código listo. Parado a la espera de tu OK visual.
+
+**Qué hay:**
+
+- Figura 16×16 a 90° (capa GOLD, 4 direcciones, 2 frames de paso).
+- WASD mueve al jugador. Hitbox 10×7. Agua y troncos sólidos; hierba y arbustos no.
+- Cámara con deadzone 80×48, lerp y snap a píxel.
+- Si estás bajo una copa, **solo esa** se pone ghost (~0.32).
+
+**Cómo probarlo:** ventana **Zaralle — Phase 8**. Camina al agua (para), métete bajo un árbol (la copa se transparenta), pasa delante (tú encima). Q/E y R igual.

@@ -5,6 +5,8 @@
     { "id": "dirt", "file": "dirt.png", "role": "terrain" },
     { "id": "stone", "file": "stone.png", "role": "terrain" },
     { "id": "sand", "file": "sand.png", "role": "terrain" },
+    { "id": "water_deep", "file": "water_deep.png", "role": "terrain" },
+    { "id": "water_shallow", "file": "water_shallow.png", "role": "terrain" },
     { "id": "pebble", "file": "pebble.png", "role": "decal" },
     { "id": "tuft", "file": "tuft.png", "role": "decal" }
   ]

@@ -10,10 +10,9 @@ use winit::keyboard::{KeyCode, PhysicalKey};
 use winit::window::{Window, WindowId};
 
 use crate::camera::Camera;
+use crate::player::Player;
 use crate::renderer::Renderer;
 use crate::world;
-
-const CAMERA_SPEED: f32 = 180.0;
 
 #[derive(Default)]
 struct Input {
@@ -27,6 +26,7 @@ pub struct App {
     window: Option<Arc<Window>>,
     renderer: Option<Renderer>,
     camera: Camera,
+    player: Option<Player>,
     input: Input,
     last_frame: Instant,
 }
@@ -37,6 +37,7 @@ impl App {
             window: None,
             renderer: None,
             camera: Camera::new(world::world_pixel_size()),
+            player: None,
             input: Input::default(),
             last_frame: Instant::now(),
         }
@@ -73,7 +74,7 @@ impl ApplicationHandler for App {
             event_loop
                 .create_window(
                     Window::default_attributes()
-                        .with_title("Zaralle — Phase 3")
+                        .with_title("Zaralle — Phase 8")
                         .with_inner_size(winit::dpi::LogicalSize::new(1280.0, 720.0))
                         .with_min_inner_size(winit::dpi::LogicalSize::new(640.0, 360.0)),
                 )
@@ -83,8 +84,11 @@ impl ApplicationHandler for App {
             .expect("initialize renderer");
         let size = window.inner_size();
         renderer.resize(size.width, size.height);
+        let player = Player::new(renderer.spawn_point());
+        self.camera.look_at(player.center());
         self.window = Some(window);
         self.renderer = Some(renderer);
+        self.player = Some(player);
         self.last_frame = Instant::now();
     }
 
@@ -98,6 +102,13 @@ impl ApplicationHandler for App {
             WindowEvent::CloseRequested => event_loop.exit(),
             WindowEvent::Resized(size) => {
                 if let Some(renderer) = self.renderer.as_mut() {
+                    renderer.resize(size.width, size.height);
+                }
+            }
+            WindowEvent::ScaleFactorChanged { .. } => {
+                if let (Some(window), Some(renderer)) = (self.window.as_ref(), self.renderer.as_mut())
+                {
+                    let size = window.inner_size();
                     renderer.resize(size.width, size.height);
                 }
             }
@@ -122,6 +133,21 @@ impl ApplicationHandler for App {
                     KeyCode::KeyS | KeyCode::ArrowDown => self.input.down = pressed,
                     KeyCode::KeyA | KeyCode::ArrowLeft => self.input.left = pressed,
                     KeyCode::KeyD | KeyCode::ArrowRight => self.input.right = pressed,
+                    KeyCode::KeyQ if pressed => {
+                        if let Some(renderer) = self.renderer.as_mut() {
+                            renderer.nudge_sun(-0.18);
+                        }
+                    }
+                    KeyCode::KeyE if pressed => {
+                        if let Some(renderer) = self.renderer.as_mut() {
+                            renderer.nudge_sun(0.18);
+                        }
+                    }
+                    KeyCode::KeyR if pressed => {
+                        if let Some(renderer) = self.renderer.as_mut() {
+                            renderer.toggle_rain();
+                        }
+                    }
                     _ => {}
                 }
             }
@@ -129,12 +155,30 @@ impl ApplicationHandler for App {
                 let now = Instant::now();
                 let dt = (now - self.last_frame).as_secs_f32().min(0.05);
                 self.last_frame = now;
-                self.camera.pan(self.move_axis() * CAMERA_SPEED * dt);
+                let axis = self.move_axis();
+                if let (Some(player), Some(renderer)) =
+                    (self.player.as_mut(), self.renderer.as_ref())
+                {
+                    player.tick(axis, dt, |x, y, w, h| renderer.blocked_aabb(x, y, w, h));
+                }
+                if let Some(player) = self.player.as_ref() {
+                    self.camera.follow(player.center(), dt);
+                }
 
-                if let Some(renderer) = self.renderer.as_mut() {
-                    if let Err(err) = renderer.render(&self.camera) {
+                let fps_title = if let (Some(renderer), Some(player)) =
+                    (self.renderer.as_mut(), self.player.as_ref())
+                {
+                    if let Err(err) = renderer.render(&self.camera, player, dt) {
                         log::error!("render failed: {err:#}");
                         event_loop.exit();
+                    }
+                    renderer.take_fps()
+                } else {
+                    None
+                };
+                if let Some(fps) = fps_title {
+                    if let Some(window) = self.window.as_ref() {
+                        window.set_title(&format!("Zaralle — Phase 8  ·  {fps:.0} fps"));
                     }
                 }
             }
