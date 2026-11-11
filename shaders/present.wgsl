@@ -111,7 +111,8 @@ fn digit_ink(d: i32, lx: i32, ly: i32) -> bool {
     if (lx < 0 || lx > 2 || ly < 0 || ly > 4) {
         return false;
     }
-    return ((digit_row(d, ly) >> (2 - lx)) & 1) == 1;
+    // WGSL requires the shift amount to be u32. lx is 0..2 here, so 2 - lx stays non-negative.
+    return ((digit_row(d, ly) >> u32(2 - lx)) & 1) == 1;
 }
 
 fn clock_ink(px: vec2<i32>, origin: vec2<i32>, h: i32, m: i32) -> bool {
