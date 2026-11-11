@@ -1,5 +1,6 @@
-[build]
-target = "x86_64-pc-windows-gnu"
+# Host toolchain picks the target.
+# Windows: `cargo +zaralle-gnu` is the gnu host and uses the MinGW linker below.
+# Linux: native build, so Cloud Agents can run the window.
 
 [target.x86_64-pc-windows-gnu]
 linker = "C:\\Users\\mario\\w64devkit\\bin\\gcc.exe"
