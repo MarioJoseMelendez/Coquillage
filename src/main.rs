@@ -1,6 +1,7 @@
 mod app;
 mod assets;
 mod camera;
+mod player;
 mod renderer;
 mod world;
 

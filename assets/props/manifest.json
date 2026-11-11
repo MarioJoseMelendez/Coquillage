@@ -11,6 +11,20 @@
     { "id": "flower_a", "file": "flower_a.png", "role": "prop" },
     { "id": "flower_b", "file": "flower_b.png", "role": "prop" },
     { "id": "mushroom_a", "file": "mushroom_a.png", "role": "prop" },
-    { "id": "clump_a", "file": "clump_a.png", "role": "prop" }
+    { "id": "clump_a", "file": "clump_a.png", "role": "prop" },
+    { "id": "grass_short", "file": "grass_short.png", "role": "prop" },
+    { "id": "grass_short_b", "file": "grass_short_b.png", "role": "prop" },
+    { "id": "grass_tall", "file": "grass_tall.png", "role": "prop" },
+    { "id": "grass_tall_b", "file": "grass_tall_b.png", "role": "prop" },
+    { "id": "shadow", "file": "shadow.png", "role": "prop" },
+    { "id": "shadow_sm", "file": "shadow_sm.png", "role": "prop" },
+    { "id": "player_s", "file": "player_s.png", "role": "prop" },
+    { "id": "player_s2", "file": "player_s2.png", "role": "prop" },
+    { "id": "player_n", "file": "player_n.png", "role": "prop" },
+    { "id": "player_n2", "file": "player_n2.png", "role": "prop" },
+    { "id": "player_e", "file": "player_e.png", "role": "prop" },
+    { "id": "player_e2", "file": "player_e2.png", "role": "prop" },
+    { "id": "player_w", "file": "player_w.png", "role": "prop" },
+    { "id": "player_w2", "file": "player_w2.png", "role": "prop" }
   ]
 }
