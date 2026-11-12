@@ -146,11 +146,6 @@ fn clock_ink(px: vec2<i32>, origin: vec2<i32>, h: i32, m: i32) -> bool {
     return false;
 }
 
-fn clock_plate(px: vec2<i32>, origin: vec2<i32>) -> bool {
-    let p = px - (origin - vec2<i32>(2, 2));
-    return p.x >= 0 && p.y >= 0 && p.x < 38 && p.y < 14;
-}
-
 fn sky_open(worldp: vec2<f32>) -> bool {
     let cx = i32(floor(worldp.x / 16.0));
     let cy = i32(floor(worldp.y / 16.0));
@@ -281,8 +276,8 @@ fn fs_main(in: VsOut) -> @location(0) vec4<f32> {
     rgb = mix(rgb, mix(fog, vec3<f32>(0.62, 0.66, 0.72), 0.25), aura);
     rgb *= 1.0 - rim * rim * (clear_k * 0.035 + rain * 0.06);
 
-    // Clock under the sun. Dark plate (LEAF_SH) and foam ink, or it
-    // disappears into the canopy. 2× the 3×5 font.
+    // Clock under the sun. Same trick as the sprites: 1 px purple outline,
+    // light ink. No filled plate.
     let ih = i32(floor(hour)) % 24;
     let im = i32(floor(fract(hour) * 60.0)) % 60;
     let clock_o = vec2<i32>(i32(round(cx)) - 17, i32(round(cy)) + 10);
@@ -290,7 +285,11 @@ fn fs_main(in: VsOut) -> @location(0) vec4<f32> {
     let foam = vec3<f32>(214.0, 224.0, 210.0) / 255.0;
     let leaf_sh = vec3<f32>(56.0, 40.0, 72.0) / 255.0;
     let ink = clock_ink(pxi, clock_o, ih, im);
-    if (clock_plate(pxi, clock_o) && !ink) {
+    let rim_px = clock_ink(pxi + vec2<i32>(-1, 0), clock_o, ih, im)
+        || clock_ink(pxi + vec2<i32>(1, 0), clock_o, ih, im)
+        || clock_ink(pxi + vec2<i32>(0, -1), clock_o, ih, im)
+        || clock_ink(pxi + vec2<i32>(0, 1), clock_o, ih, im);
+    if (rim_px && !ink) {
         rgb = leaf_sh;
     }
     if (ink) {

@@ -4,7 +4,11 @@ Bitácora para no perder el hilo. Lo de arriba es lo más nuevo. El chat de Mari
 
 ## 2026-11-11
 
-- El reloj no se notaba. Va bajo el sol, con placa oscura y dígitos claros, al doble.
+- El pixel art del bosque se queda como estaba. La luz interactiva es una técnica encima, no un redibujo.
+- El personaje es top-down, a 90°. Lo dibujo yo, en el estilo del juego. Sin elipses.
+- El logo es solo tipografía. Nada de marco ni de icono.
+- El reloj no lleva placa. Contorno de un píxel, tinta clara.
+- El reloj no se notaba. Va bajo el sol.
 - El aura se notaba demasiado de día, sobre todo al acercarse la noche. De día está apagada. Empieza a verse camino a la noche. Con lluvia se nota más, y aun así es suave.
 - El juego se llama **Coquillage**. Mario ya renombró el repositorio a https://github.com/MarioJoseMelendez/Coquillage.git.
 - Manos del jugador: ni tan grandes ni tan circulares. Balancearlas con el resto del cuerpo. 2×2 planas, esquina oscura, pegadas a las costillas.

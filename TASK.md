@@ -4,7 +4,10 @@ Hilo de lo que pidió Mario. Lo nuevo va arriba. No borrar ítems viejos: marcar
 
 ## 2026-11-11
 
-- [x] Reloj legible bajo el sol: placa morada, dígitos claros, 2×.
+- [x] Bosque, arbustos y hierba: pixel art original. La luz es el shader, no un redibujo.
+- [x] Reloj: se lee, sin placa. Contorno de un píxel, como el resto de los sprites.
+- [x] Personaje a 90°. Cabeza arena, cuerpo azul, manos 2×2. Sin elipses.
+- [x] Logo: solo la palabra Coquillage. Sin marco y sin icono.
 - [x] Aura apagada de día. Crece solo hacia la noche. La lluvia queda por encima, y las dos son suaves.
 - [x] Renombrar el repositorio de GitHub a Coquillage. Mario lo dejó en https://github.com/MarioJoseMelendez/Coquillage.git
 - [ ] Dejar ese repositorio en privado.

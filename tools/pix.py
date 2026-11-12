@@ -36,7 +36,7 @@ GROUT = (92, 88, 84, 255)
 PETAL_A = (214, 92, 120, 255)
 PETAL_B = (236, 236, 210, 255)
 GOLD = (236, 214, 70, 255)
-# Cloth, not the pond. Light steps toward sand; shadow steps toward LEAF_SH.
+# Cloth. Not the pond, not the sun.
 SHIRT_HI = (168, 196, 214, 255)
 SHIRT = (62, 108, 164, 255)
 SHIRT_DK = (36, 58, 112, 255)
@@ -129,12 +129,7 @@ def leaf_nub(buf, w, h, x: int, y: int, color, salt: int) -> None:
 
 
 def slynyrd_pad(buf, w, h, cx, cy, rx, ry, salt: int, hi=LEAF_HI, mid=LEAF_MID, dk=LEAF_DK, sh=LEAF_SH) -> None:
-    """Slynyrd 44 pads: volume by radius, broccoli nubs. No baked sun.
-
-    The bright cluster moves in the shader (Sprite Lamp: diffuse is evenly lit,
-    the normal map carries direction). `hi` stays in the signature for callers.
-    """
-    del hi
+    """Slynyrd 160: volume rings + broccoli teeth. Minecraft nubs on top. Purple = SE crescent only."""
     cx, cy = float(cx), float(cy)
     rx, ry = max(float(rx), 3.0), max(float(ry), 3.0)
     x0, x1 = int(cx - rx - 6), int(cx + rx + 6)
@@ -148,16 +143,15 @@ def slynyrd_pad(buf, w, h, cx, cy, rx, ry, salt: int, hi=LEAF_HI, mid=LEAF_MID, 
             jag = 0.10 * math.sin(ang * 6.0 + salt * 0.4) + 0.05 * (hash01(x, y, salt) - 0.5)
             if d > 1.0 + jag:
                 continue
-            edge = math.sqrt(max(d, 0.0))
-            h = hash01(x, y, salt)
-            if edge > 0.88:
+            light = -nx * 0.55 - ny * 0.50
+            if light < -0.52 or (d > 0.78 and light < -0.28):
                 col = sh
-            elif edge > 0.62:
-                col = sh if h > 0.72 else dk
-            elif h > 0.84:
+            elif light < -0.08:
                 col = dk
-            else:
+            elif light < 0.42:
                 col = mid
+            else:
+                col = hi
             put(buf, w, x, y, col)
 
     nubs = max(14, int(rx * 1.6))
@@ -167,8 +161,9 @@ def slynyrd_pad(buf, w, h, cx, cy, rx, ry, salt: int, hi=LEAF_HI, mid=LEAF_MID, 
         dist = 0.86 + hash01(i, salt, 2) * 0.22
         px = cx + math.cos(ang) * rx * dist
         py = cy + math.sin(ang) * ry * dist
-        roll = hash01(i, salt, 4)
-        col = sh if roll < 0.22 else dk if roll < 0.55 else mid
+        se = math.cos(ang) + math.sin(ang) > 0.35
+        nw = math.cos(ang) + math.sin(ang) < -0.35
+        col = sh if se else hi if nw else (mid if i % 2 == 0 else dk)
         rr = 3 + int(hash01(i, salt, 3) * 2)
         ellipse(buf, w, h, px, py, rr, rr - 1, col)
 
@@ -179,12 +174,29 @@ def slynyrd_pad(buf, w, h, cx, cy, rx, ry, salt: int, hi=LEAF_HI, mid=LEAF_MID, 
         rad = math.sqrt(max(v, 0.0)) * 0.78
         px = cx + math.cos(ang) * rx * rad
         py = cy + math.sin(ang) * ry * rad
-        edge = math.hypot((px - cx) / rx, (py - cy) / ry)
-        if edge > 0.72:
+        nx = (px - cx) / rx
+        ny = (py - cy) / ry
+        light = -nx * 0.55 - ny * 0.50
+        if light > 0.40:
+            col = hi
+        elif light < -0.28:
             col = dk
         else:
             col = mid if hash01(i, salt, 9) > 0.35 else dk
         leaf_nub(buf, w, h, int(px), int(py), col, salt + i)
+
+    for i in range(max(10, int(rx * 1.1))):
+        u = hash01(i, salt, 7)
+        v = hash01(i, salt, 8)
+        if u < 0.18:
+            continue
+        px = int(cx - rx * 0.48 + u * rx * 0.85)
+        py = int(cy - ry * 0.52 + v * ry * 0.70)
+        nx = (px + 0.5 - cx) / rx
+        ny = (py + 0.5 - cy) / ry
+        if nx * nx + ny * ny > 0.82:
+            continue
+        star(buf, w, h, px, py, hi)
 
 
 def hash01(x: int, y: int, salt: int) -> float:
@@ -203,16 +215,18 @@ def in_blob(x: int, y: int, cx: float, cy: float, rx: float, ry: float, salt: in
 
 
 def leaf_tex(x: int, y: int, nx: float, ny: float, salt: int, hi, mid, mid2, dk, sh, density: float = 0.10):
-    """Leaf cells with holes and a darker rim. Sun highlight is the shader, not this texture."""
+    """Minecraft HD leaf block: 2×2 cells, holes, NW sun, purple SE. Not salt, not balloons."""
     cx2, cy2 = x // 2, y // 2
     hole = hash01(cx2, cy2, salt + 9)
     edge = min(1.0, math.hypot(nx, ny))
     if hole < density + edge * 0.14:
         return None
     n = hash01(cx2, cy2, salt + 1)
-    del hi
-    if edge > 0.72:
+    light = -nx * 0.5 - ny * 0.45
+    if light > 0.22:
         return sh if n > 0.5 else dk
+    if light < -0.18 and n > 0.42:
+        return hi
     if n < 0.28:
         return dk
     if n > 0.72:

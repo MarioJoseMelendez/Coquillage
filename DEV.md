@@ -310,7 +310,7 @@ Cada frame: 2 draw calls (world instanced + present fullscreen). Solo se resuben
 
 **Coquillage:** sprite 32×32 visto a 90° (cabeza chica de arena, camisa `SHIRT` azul, no `GOLD`). Manos 2×2 planas con una esquina oscura, al lado de las costillas, no elipses. Hitbox 10×8 en los pies. WASD mueve al jugador. Cámara con deadzone + lerp + snap. Fade de copa: un solo instance, probe = jugador.
 
-Reloj: fuente 3×5 bajo el sol/luna, HH:MM del `day_hour`, 1 px de sombra (no outline). Subtle, paleta disc + FOAM.
+Reloj: fuente 3×5 a 2× bajo el sol/luna, HH:MM del `day_hour`. Contorno de 1 px en `LEAF_SH` y tinta `FOAM`, igual que el outline de los sprites. Sin placa.
 
 **Guías:**
 
