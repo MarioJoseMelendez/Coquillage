@@ -148,62 +148,90 @@ def outline(buf: bytearray, width: int, height: int, col) -> bytearray:
     return out
 
 
+def stamp_body(buf: bytearray, w: int, cx: int, cy: int) -> None:
+    """Shoulders wider than the hem. Seen from above, not a front-facing torso."""
+    spans = ((-4, 4), (-5, 5), (-5, 5), (-4, 4), (-3, 3), (-2, 2))
+    for i, (x0, x1) in enumerate(spans):
+        y = cy - 2 + i
+        for x in range(cx + x0, cx + x1 + 1):
+            if x >= cx + 3:
+                col = p.SHIRT_DK
+            elif x == cx - 3 and i == 1:
+                col = p.SHIRT_HI
+            else:
+                col = p.SHIRT
+            p.put(buf, w, x, y, col)
+
+
+def stamp_head(buf: bytearray, w: int, cx: int, cy: int, facing: str) -> None:
+    """Scalp only. Corners stay empty so it is not a disc. No face."""
+    if facing == "n":
+        pixels = (
+            (-2, 0, p.BARK_DK), (-1, 0, p.BARK), (0, 0, p.BARK), (1, 0, p.BARK), (2, 0, p.BARK_HI),
+            (-2, 1, p.BARK), (-1, 1, p.BARK), (0, 1, p.BARK_DK), (1, 1, p.BARK), (2, 1, p.BARK),
+            (-1, 2, p.BARK_DK), (0, 2, p.BARK), (1, 2, p.BARK),
+        )
+    elif facing == "e":
+        pixels = (
+            (0, 0, p.SAND_HI), (1, 0, p.SAND), (2, 0, p.SAND_HI),
+            (-1, 1, p.BARK), (0, 1, p.SAND), (1, 1, p.SAND_HI), (2, 1, p.SAND),
+            (0, 2, p.SAND_DK), (1, 2, p.SAND),
+        )
+    else:
+        pixels = (
+            (-1, 0, p.SAND_HI), (0, 0, p.SAND_HI), (1, 0, p.SAND),
+            (-2, 1, p.SAND), (-1, 1, p.SAND_HI), (0, 1, p.SAND), (1, 1, p.SAND), (2, 1, p.SAND_DK),
+            (-1, 2, p.SAND), (0, 2, p.SAND_DK), (1, 2, p.SAND),
+        )
+    for dx, dy, col in pixels:
+        p.put(buf, w, cx + dx, cy + dy, col)
+
+
 def player(facing: str, step: bool) -> bytes:
-    """True 90° bird's-eye: head + shoulders + cloak. No face. Palette cloak = GOLD."""
-    # Framesprite: 90° shows scalp, shoulders, footprint; face hidden.
-    # Pixeli: N is hair/nape; S shows a hint of chest toward +Y. W = flip of E.
-    # Hands: blocky SAND pads on the sides toward the front (Mario sample 2).
+    """90° only. Scalp, shoulders, footprint. No face, no cloak ellipse.
+
+    The old phone sprite is a sand cap over a blue body. This is that read,
+    with the game's cluster shading. W is a flip of E.
+    """
     w = h = 32
     buf = p.canvas(w, h)
     bob = 1 if step else 0
-    if facing == "s":
-        p.ellipse(buf, w, h, 16, 22 + bob, 9, 6, p.BARK)
-        p.ellipse(buf, w, h, 16, 20 + bob, 9, 6, p.GOLD)
-        p.ellipse(buf, w, h, 16, 12, 7, 7, p.LEAF_SH)
-        p.ellipse(buf, w, h, 15, 11, 4, 4, p.BARK)
-        p.put(buf, w, 16, 9, p.BARK_HI)
-        p.put(buf, w, 16, 17, p.SAND)
-        p.put(buf, w, 15, 17, p.SAND)
-        p.put(buf, w, 16, 24 + bob, p.PETAL_A)
-    elif facing == "n":
-        p.ellipse(buf, w, h, 16, 22 - bob, 9, 6, p.BARK)
-        p.ellipse(buf, w, h, 16, 20 - bob, 9, 6, p.GOLD)
-        p.ellipse(buf, w, h, 16, 12, 7, 7, p.LEAF_SH)
-        p.ellipse(buf, w, h, 16, 11, 5, 5, p.BARK_DK)
-        p.put(buf, w, 15, 10, p.BARK)
-        p.put(buf, w, 16, 8, p.BARK_HI)
-        p.ellipse(buf, w, h, 16, 24, 5, 3, p.LEAF_SH)
+    if facing == "n":
+        stamp_body(buf, w, 16, 18 - bob)
+        stamp_head(buf, w, 16, 11, "n")
+    elif facing == "s":
+        stamp_body(buf, w, 16, 18 + bob)
+        stamp_head(buf, w, 16, 10, "s")
+        p.put(buf, w, 15, 23 + bob, p.SAND_DK)
+        p.put(buf, w, 17, 23 + bob, p.SAND_DK)
     else:
-        p.ellipse(buf, w, h, 16, 22, 7, 6, p.BARK)
-        p.ellipse(buf, w, h, 16, 20, 7, 6, p.GOLD)
-        p.ellipse(buf, w, h, 17, 12, 7, 7, p.LEAF_SH)
-        p.ellipse(buf, w, h, 16, 11, 4, 4, p.BARK)
-        p.put(buf, w, 17, 9, p.BARK_HI)
-        p.put(buf, w, 17, 17, p.SAND)
-        p.put(buf, w, 18, 24, p.PETAL_A)
+        stamp_body(buf, w, 16, 18)
+        stamp_head(buf, w, 18, 10, "e")
+        p.put(buf, w, 18, 23, p.SAND_DK)
     buf = outline(buf, w, h, p.LEAF_SH)
     stamp_hands(buf, w, facing, step)
     return bytes(buf)
 
 
 def stamp_hands(buf: bytearray, w: int, facing: str, step: bool) -> None:
+    """2×2 flats beside the shoulders. One dark corner, not a disc."""
     bob = 1 if step else 0
 
-    def paw(cx: int, cy: int) -> None:
-        p.ellipse(buf, w, w, cx, cy, 5, 4, p.SAND)
-        p.ellipse(buf, w, w, cx - 1, cy - 1, 3, 2, p.SAND_HI)
-        p.put(buf, w, cx + 2, cy + 1, p.SAND_DK)
-        p.put(buf, w, cx + 1, cy + 2, p.SAND_DK)
+    def flat(x: int, y: int) -> None:
+        p.put(buf, w, x, y, p.SAND_HI)
+        p.put(buf, w, x + 1, y, p.SAND)
+        p.put(buf, w, x, y + 1, p.SAND)
+        p.put(buf, w, x + 1, y + 1, p.SAND_DK)
 
     if facing == "s":
-        paw(6, 24 + bob)
-        paw(25, 24 - bob)
+        flat(9, 17 + bob)
+        flat(20, 16 + bob)
     elif facing == "n":
-        paw(6, 22 - bob)
-        paw(25, 22 + bob)
+        flat(9, 15 - bob)
+        flat(20, 16 - bob)
     else:
-        paw(25, 22 - bob)
-        paw(7, 24 + bob)
+        flat(21, 16 + bob)
+        flat(9, 18 - bob)
 
 
 def shadow(width: int, height: int) -> bytes:

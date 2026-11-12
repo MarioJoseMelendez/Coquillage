@@ -17,6 +17,9 @@ struct Light {
     wind: vec2<f32>,
     rain: f32,
     _weather_pad: f32,
+    key_hi: vec4<f32>,
+    point0: vec4<f32>,
+    point1: vec4<f32>,
 };
 
 @group(0) @binding(0) var<uniform> camera: Camera;
@@ -70,6 +73,25 @@ fn luma_of(c: vec3<f32>) -> f32 {
     return dot(c, vec3<f32>(0.299, 0.587, 0.114));
 }
 
+// Pixeli fire ramp: orange body, pale yellow only on the pixels that face the flame.
+fn add_point(rgb: vec3<f32>, n: vec3<f32>, world: vec2<f32>, point: vec4<f32>) -> vec3<f32> {
+    if (point.w < 0.01 || point.z < 1.0) {
+        return rgb;
+    }
+    let to_l = point.xy - world;
+    let dist = length(to_l);
+    let t = clamp(1.0 - dist / point.z, 0.0, 1.0);
+    let atten = t * t;
+    let lp = normalize(vec3<f32>(to_l, point.z * 0.22));
+    let nd = clamp(dot(n, lp) * 0.5 + 0.5, 0.0, 1.0);
+    let body = vec3<f32>(0.91, 0.47, 0.19);
+    let core = vec3<f32>(1.0, 0.78, 0.42);
+    var out = mix(rgb, body, atten * nd * point.w * 0.72);
+    let hot = smoothstep(0.72, 0.95, nd) * atten;
+    out = mix(out, core, hot * point.w * 0.55);
+    return out;
+}
+
 @fragment
 fn fs_main(in: VsOut) -> @location(0) vec4<f32> {
     var local0 = vec2<i32>(clamp(in.uv * in.atlas_wh, vec2<f32>(0.0), in.atlas_wh - vec2<f32>(1.0)));
@@ -118,10 +140,21 @@ fn fs_main(in: VsOut) -> @location(0) vec4<f32> {
     var n = n_enc * 2.0 - 1.0;
     n = normalize(n);
     let L = normalize(vec3<f32>(light.sun_dir.x, light.sun_dir.y, light.elevation * 1.35));
-    let wrap = max(dot(n, L), 0.0) * 0.5 + 0.5;
+    let nd = dot(n, L);
+    // Sprite Lamp wrap: 0 = Lambert, higher = light reaches the silhouette.
+    let wrap = clamp(nd + 0.5, 0.0, 1.5) / 1.5;
     let k = 0.70 + light.elevation * 0.65;
     let lit = pow(wrap, k);
     var rgb = mix(color.rgb * light.shadow.xyz, color.rgb * light.sun_tint.xyz, lit);
+
+    // Tight cluster only on sloped pixels facing the key. Flat ground stays put.
+    if (!water) {
+        let slope = length(n.xy);
+        let spot = smoothstep(0.42, 0.82, nd) * smoothstep(0.16, 0.42, slope);
+        rgb = mix(rgb, light.key_hi.xyz, spot * (0.34 + light.key_hi.a * 0.38));
+    }
+    rgb = add_point(rgb, n, in.world_xy, light.point0);
+    rgb = add_point(rgb, n, in.world_xy, light.point1);
 
     if (water) {
         let luma = luma_of(color.rgb);

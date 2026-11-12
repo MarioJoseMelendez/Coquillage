@@ -3,7 +3,7 @@ description: Follow DEV.md; search gamedev guides before inventing visuals or te
 alwaysApply: true
 ---
 
-# Zaralle agent law
+# Coquillage agent law
 
 Goal: the best possible game. Do not invent visuals or tech.
 
@@ -12,4 +12,4 @@ Goal: the best possible game. Do not invent visuals or tech.
 3. If Mario did not specify the look/technique and you are unsure — **search gamedev/pixel-art guides this session** (even for "just visuals"). Apply 2–3 concrete rules. Do not improvise a pretty effect.
 4. Strict top-down orthographic. Never isometric/3/4 camera. Palette from `tools/pix.py` (purple shadows, yellow-lime lights). Trees = stacked foliage pads, not spokes.
 5. One phase; stop for visual OK. No underground layers until asked. Commit/push only if asked.
-6. Build: `cargo +zaralle-gnu --release` with w64devkit on PATH.
+6. Build: `cargo +coquillage-gnu --release` with w64devkit on PATH.

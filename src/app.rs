@@ -74,7 +74,7 @@ impl ApplicationHandler for App {
             event_loop
                 .create_window(
                     Window::default_attributes()
-                        .with_title("Zaralle — Phase 8")
+                        .with_title("Coquillage — Phase 8")
                         .with_inner_size(winit::dpi::LogicalSize::new(1280.0, 720.0))
                         .with_min_inner_size(winit::dpi::LogicalSize::new(640.0, 360.0)),
                 )
@@ -178,7 +178,7 @@ impl ApplicationHandler for App {
                 };
                 if let Some(fps) = fps_title {
                     if let Some(window) = self.window.as_ref() {
-                        window.set_title(&format!("Zaralle — Phase 8  ·  {fps:.0} fps"));
+                        window.set_title(&format!("Coquillage — Phase 8  ·  {fps:.0} fps"));
                     }
                 }
             }

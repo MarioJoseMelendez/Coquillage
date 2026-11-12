@@ -1,4 +1,4 @@
-# Zaralle — DEV.md (guías para agentes)
+# Coquillage — DEV.md (guías para agentes)
 
 Objetivo: **el mejor videojuego posible**. Este archivo es la biblia operativa. Léelo antes de tocar arte, shaders, terreno o pipeline.
 
@@ -29,7 +29,7 @@ Antes de implementar o retocar algo visual/técnico que no esté cerrado:
 1. Nombra el problema en una frase (“lluvia que se lea cayendo”, “sombra blob vs sol”).
 2. Busca 2–3 fuentes de **gamedev / pixel art / rendering**, no blogs genéricos de IA.
 3. Extrae 3 reglas concretas (dirección del motion, ancla, paleta, qué no hacer).
-4. Encájalas en Zaralle: top-down ortográfico estricto, 1 sprite-px = 1 world-px, paleta `tools/pix.py`, nearest-neighbor.
+4. Encájalas en Coquillage: top-down ortográfico estricto, 1 sprite-px = 1 world-px, paleta `tools/pix.py`, nearest-neighbor.
 5. Si choca con una ref o con Mario, gana Mario/ref.
 
 Consultas útiles: `pixel art <tema>`, `2D <tema> shader`, `top-down <tema>`, `Saint11`, `Slynyrd Pixelblog`, `Lospec`, `gamedev`.
@@ -51,8 +51,8 @@ Consultas útiles: `pixel art <tema>`, `2D <tema> shader`, `top-down <tema>`, `S
 | Capas | `ground` / `floor` / `cover` en celdas 16×16. CPU. Sin subterráneo |
 | Cover de árbol | Solo tronco (celda de ocupación en la base). La copa no tapa lluvia |
 | Fade de copa | Solo el instance sobre el jugador. **Off** hasta que exista jugador |
-| Toolchain | `cargo +zaralle-gnu`, Path + `C:\Users\mario\w64devkit\bin` |
-| Exe | `target\x86_64-pc-windows-gnu\release\zaralle.exe` |
+| Toolchain | `cargo +coquillage-gnu`, Path + `C:\Users\mario\w64devkit\bin` |
+| Exe | `target\x86_64-pc-windows-gnu\release\coquillage.exe` |
 
 Refs que mandan (en este orden):
 
@@ -68,11 +68,11 @@ Ambiente: solo naturaleza. Sin ciudades, NPCs, armas.
 
 ## 3. Cámara y perspectiva
 
-**Zaralle:** ortho Y-down, pan WASD, sin convergencia, sin isometría.
+**Coquillage:** ortho Y-down, pan WASD, sin convergencia, sin isometría.
 
 **Guías:**
 
-- [OpenGameArt — Perspectives](https://opengameart.org/content/chapter-3-perspectives) — axonometría vs isométrica. Zaralle **no** es isométrica.
+- [OpenGameArt — Perspectives](https://opengameart.org/content/chapter-3-perspectives) — axonometría vs isométrica. Coquillage **no** es isométrica.
 - [LPC Style Guide — Perspective](https://lpc.opengameart.org/static/LPC-Style-Guide/build/styleguide.html) — ortográfico, las cosas no encogen con la distancia. LPC usa ~60°; **nosotros 90° puro**.
 - [RPG in a Box — 2D orthogonal 90°](https://rpginabox.com/docs/doku.php?id=2d_games) — pitch 90, ortho, sin rotar cámara.
 - [Sandro Maglione — top-down sprites](https://www.sandromaglione.com/articles/pixel-art-top-down-game-sprite-design-and-animation) — sombras de contacto para altura; el sprite se lee desde arriba.
@@ -84,7 +84,7 @@ Ambiente: solo naturaleza. Sin ciudades, NPCs, armas.
 
 ## 4. Pixel art, paleta, anti-slop
 
-**Zaralle:** clusters, hue-shift, 4–6 colores por material, silueta clara a 1×.
+**Coquillage:** clusters, hue-shift, 4–6 colores por material, silueta clara a 1×.
 
 **Guías:**
 
@@ -106,7 +106,7 @@ Los shaders de grade **mezclan hacia** `LEAF_HI` / `GOLD` / `LEAF_SH` / `WATER_S
 
 ## 5. Resolución y present
 
-**Zaralle:** world 640×360 nearest → present. Integer scale; si el rect entero cubre < 78% de la ventana, fill. Píxeles de mundo enteros.
+**Coquillage:** world 640×360 nearest → present. Integer scale; si el rect entero cubre < 78% de la ventana, fill. Píxeles de mundo enteros.
 
 **Guías:**
 
@@ -122,7 +122,7 @@ Los shaders de grade **mezclan hacia** `LEAF_HI` / `GOLD` / `LEAF_SH` / `WATER_S
 
 ## 6. Terreno y anti-tiling
 
-**Zaralle:** tiles 32×32; césped = tile verde; hierba = mechones encima. Arena irregular entre agua y tierra. Occupancy 16×16 invisible.
+**Coquillage:** tiles 32×32; césped = tile verde; hierba = mechones encima. Arena irregular entre agua y tierra. Occupancy 16×16 invisible.
 
 **Guías:**
 
@@ -138,7 +138,7 @@ Los shaders de grade **mezclan hacia** `LEAF_HI` / `GOLD` / `LEAF_SH` / `WATER_S
 
 ## 7. Árboles y vegetación
 
-**Zaralle:** `slynyrd_pad` en `tools/pix.py`. tree_a 96×96, tree_b 64×96, tree_c 64×64. Arbustos/helechos 32. Hierba alta 24×32, corta/flores 16.
+**Coquillage:** `slynyrd_pad` en `tools/pix.py`. tree_a 96×96, tree_b 64×96, tree_c 64×64. Arbustos/helechos 32. Hierba alta 24×32, corta/flores 16.
 
 **Guías:**
 
@@ -155,7 +155,7 @@ Césped ≠ hierba. La hierba se mece; el césped no.
 
 ## 8. Capas, occupancy, cover
 
-**Zaralle:** `Layers { ground, floor, cover }` en `src/world.rs`. Celda 16×16.  
+**Coquillage:** `Layers { ground, floor, cover }` en `src/world.rs`. Celda 16×16.  
 `ground` = material + `G_TAKEN`. `floor` = pebble/flor/hierba corta. `cover` = lo que tapa el suelo (arbustos = occupancy; árboles = **solo tronco** en la base del sprite).  
 Lluvia se ve en todo. Moja/splash solo si `cover==0` y no es agua. Subterráneo: **no ahora**.
 
@@ -179,7 +179,7 @@ Solo **ese** instance, alfa ~0.3, sin blur. Probe = posición del jugador, no el
 
 ## 9. Iluminación y ciclo día/noche
 
-**Zaralle:** 24 min = 24 h. Q/E salta hora. Half-Lambert + Sobel normals. Grade en present hacia la paleta. Sol/luna disco en present.
+**Coquillage:** 24 min = 24 h. Q/E salta hora. Half-Lambert + Sobel normals. Grade en present hacia la paleta. Sol/luna disco en present.
 
 **Guías:**
 
@@ -191,11 +191,22 @@ Solo **ese** instance, alfa ~0.3, sin blur. Probe = posición del jugador, no el
 **Hacer:** un sol. Atardecer = paleta (GOLD + LEAF_SH), no filtro naranja. Niebla baja no debe volver el sunset gris.  
 **No:** shafts molestos; lattice naranja; pulir hasta fotoreal 3D.
 
+La mancha clara de una copa **no va horneada** en el albedo. El pad es volumen radial (medio / oscuro / morado en el borde). El cluster brillante lo pinta el shader en los píxeles cuya normal mira a la luz, y se mueve cuando cambia el azimut.
+
+Reglas de esta sesión:
+
+- [Sprite Lamp](https://www.snakehillgames.com/spritelamp/) — el difuso es la forma con luz pareja. La dirección vive en el normal map (aquí, Sobel del volumen del pad, no de un highlight pintado).
+- [Sprite Lamp wrap](https://www.snakehillgames.com/sprite-lamps-basic-shader/) — `clamp(dot(n, L) + wrap, 0, wrap + 1) / (wrap + 1)`. Wrap ~0.5 para que la silueta no muera.
+- [Pixeli — lighting scenarios](https://pixeli.pebbly.space/knowledge/rules/24-lighting-scenarios) — una key manda. Sol: highlight hacia amarillo (`LEAF_HI`), sombra hacia violeta (`LEAF_SH`). Luna: highlight pálido frío (`WATER_HI`), más débil. Antorcha: rampa de fuego, naranja `(232, 120, 48)` y núcleo amarillo pálido `(255, 199, 107)`, caída al cuadrado. El naranja es solo de la llama, no del atardecer.
+- [the-pixel.art — hue shift](https://the-pixel.art/articles/hue-shifting-pixel-art-shading/) — el sentido del hue lo dicta la luz. Sol y fuego empujan el claro al amarillo. La luna lo empuja al cian, no al dorado.
+
+Dos luces puntuales (`point0`, `point1`) junto a copas grandes. Radio ~88 px. Sirven para antorchas; no hay sprite de antorcha todavía.
+
 ---
 
 ## 10. Sombras dinámicas
 
-**Zaralle:** blob `shadow` / `shadow_sm`. Sol alto → casi círculo. Sol bajo → óvalo largo. Ancla en la base. Purple.
+**Coquillage:** blob `shadow` / `shadow_sm`. Sol alto → casi círculo. Sol bajo → óvalo largo. Ancla en la base. Purple.
 
 **Guías:**
 
@@ -211,7 +222,7 @@ Solo **ese** instance, alfa ~0.3, sin blur. Probe = posición del jugador, no el
 
 ## 11. Agua
 
-**Zaralle:** shallow/deep, foam que avanza/recde **dentro** de sí (no come tierra), sparkles world-locked, flags agua `0.5–1.5`.
+**Coquillage:** shallow/deep, foam que avanza/recde **dentro** de sí (no come tierra), sparkles world-locked, flags agua `0.5–1.5`.
 
 **Guías:**
 
@@ -226,7 +237,7 @@ Solo **ese** instance, alfa ~0.3, sin blur. Probe = posición del jugador, no el
 
 ## 12. Viento
 
-**Zaralle:** flags planta `2.1–4.0`. Sway 1–2 px, más en copa. Pivot en la base. World-space para que el bosque no baile al unísono.
+**Coquillage:** flags planta `2.1–4.0`. Sway 1–2 px, más en copa. Pivot en la base. World-space para que el bosque no baile al unísono.
 
 **Guías:**
 
@@ -242,7 +253,7 @@ Solo **ese** instance, alfa ~0.3, sin blur. Probe = posición del jugador, no el
 
 ## 13. Lluvia
 
-**Zaralle:** present.wgsl. Cae **en todo**. World-locked. Translúcida y chica. Splash/wet solo suelo descubierto (máscara R8). **R** toggle.
+**Coquillage:** present.wgsl. Cae **en todo**. World-locked. Translúcida y chica. Splash/wet solo suelo descubierto (máscara R8). **R** toggle.
 
 Y-down: **restar** tiempo a Y. Cabeza brillante **abajo**, cola arriba. Si sumas tiempo o pones el brillo arriba, **sube**.
 
@@ -253,7 +264,7 @@ Y-down: **restar** tiempo a Y. Cabeza brillante **abajo**, cola arriba. Si sumas
 - [Baltor — 3 capas de streaks](https://baltor.ai/gallery/rain-streaks-2d) — far/mid/near, distinta velocidad/opacidad.
 - [Sébastien Lagarde — rain effects](https://seblagarde.wordpress.com/2012/12/27/water-drop-2a-dynamic-rain-and-its-effects/) — streaks y splashes **sistemas independientes**; splash solo cerca de cámara / en geometría vista desde arriba.
 - [Godot rain-drop floor ripples](https://godotshaders.com/shader/rain-drop-floor-effect/) — world-space, no screen-space que nade con la cámara.
-- [Pixel raindrop splash anatomy](https://particlefx.studio/effects/pixel-raindrop-splash) — raya → corona → ripple. En Zaralle: anillo 2–3 px, no cruz blanca.
+- [Pixel raindrop splash anatomy](https://particlefx.studio/effects/pixel-raindrop-splash) — raya → corona → ripple. En Coquillage: anillo 2–3 px, no cruz blanca.
 
 **Hacer:** casi vertical (slant ≤ ~0.08). Tres velocidades. Mix bajo (~0.28).  
 **No:** diagonal 0.42 (parece que vuela). No cruces opacas sobre las copas.
@@ -264,7 +275,9 @@ Wet: oscurecer + sheen frío solo si `sky_open`. Agua ya está mojada: no sheen 
 
 ## 14. Atmósfera (niebla, shafts, aura)
 
-**Zaralle:** haze en `LightUniform`, shafts discretos, aura de borde más fuerte de noche / muy sutil de día.
+**Coquillage:** haze en `LightUniform`, shafts discretos. El aura es solo el borde.
+
+De día, hasta ~15:30, el borde está apagado. Empieza a notarse camino a la noche (`smoothstep` 15.5→19.5) y de madrugada se apaga otra vez hacia el alba. El seco nunca pasa de ~0.07 en la esquina. Con lluvia el borde es más ancho y llega a ~0.13, y el seco no lo alcanza. No hay un segundo oscurecido fijo en las esquinas.
 
 **Guías:**
 
@@ -272,14 +285,14 @@ Wet: oscurecer + sheen frío solo si `sky_open`. Agua ya está mojada: no sheen 
 - [Animated 2D fog](https://godotshaders.com/shader/procedural-2d-fog-with-pixelation/)
 - Minecraft-HD ref: marco oscuro de dosel = viñeta natural, no CRT horror.
 
-**Hacer:** UN POCO. Bonito, no molesto. Combinar con paleta.  
-**No:** viñeta negra pesada, shafts de discoteca, fog que lava el atardecer.
+**Hacer:** UN POCO. Bonito, no molesto. Combinar con paleta. El reloj va bajo el sol: placa `LEAF_SH` y dígitos `FOAM` a 2×, porque un 3×5 del color del disco se pierde en la copa.  
+**No:** viñeta negra de día, aura de atardecer tan fuerte como la de noche, aura seca más fuerte que la de lluvia, shafts de discoteca, fog que lava el atardecer.
 
 ---
 
 ## 15. Pipeline wgpu 2D
 
-**Zaralle:** instance quads + atlas + normals. World pass → present pass. Uniforms bytemuck.
+**Coquillage:** instance quads + atlas + normals. World pass → present pass. Uniforms bytemuck.
 
 **Guías:**
 
@@ -295,12 +308,14 @@ Cada frame: 2 draw calls (world instanced + present fullscreen). Solo se resuben
 
 ## 16. Jugador (Phase 8)
 
-**Zaralle:** sprite 32×32 visto a 90° (cabeza + hombros + capa GOLD + manos SAND en pads a los lados, al frente). Hitbox 10×8 en los pies. WASD mueve al jugador. Cámara con deadzone + lerp + snap. Fade de copa: un solo instance, probe = jugador.
+**Coquillage:** sprite 32×32 visto a 90° (cabeza chica de arena, camisa `SHIRT` azul, no `GOLD`). Manos 2×2 planas con una esquina oscura, al lado de las costillas, no elipses. Hitbox 10×8 en los pies. WASD mueve al jugador. Cámara con deadzone + lerp + snap. Fade de copa: un solo instance, probe = jugador.
 
-Reloj: fuente 3×5 bajo el sol/luna, HH:MM del `day_hour`, 1 px de sombra (no outline). Subtle, paleta disc + FOAM.
+Reloj: fuente 3×5 a 2× bajo el sol/luna, HH:MM del `day_hour`. Contorno de 1 px en `LEAF_SH` y tinta `FOAM`, igual que el outline de los sprites. Sin placa.
 
 **Guías:**
 
+- [Pixeli — hands](https://pixeli.pebbly.space/knowledge/rules/34-hands-and-feet) — bajo 16 px la mano no es un disco. Un borde plano y una esquina oscura. El pulgar no se dibuja en una mano relajada.
+- [Nikou — top-down hands](https://www.nikouusitalo.com/blog/looking-at-pixels-part-1-characters/) — a este tamaño la mano es 2×2, más chica que el torso. Un par de píxeles basta para el paso.
 - [Framesprite — true 90° character](https://www.framesprite.com/guides/top-down-character-sprite-generator) — cara oculta; cabeza, hombros y huella mandan.
 - [Pixeli — views](https://pixeli.pebbly.space/knowledge/rules/37-views-and-directions) — N = pelo/nuca; W = flip de E; 4 direcciones.
 - [AABB vs tiles, eje X luego Y](https://gamedev-canon.alekseiprikhodko.com/m01-collision.html) — evita enganchar esquinas.
@@ -335,7 +350,7 @@ No implementar hasta la fase. Cuando toque: buscar guía **en esa sesión** (foo
 - [ ] ¿Mario lo pidió en **esta** fase?
 - [ ] ¿Hay guía (este doc o búsqueda nueva), no paleta inventada?
 - [ ] ¿Sigue top-down puro y paleta `pix.py`?
-- [ ] ¿Compila con `cargo +zaralle-gnu --release` y se relanzó el exe?
+- [ ] ¿Compila con `cargo +coquillage-gnu --release` y se relanzó el exe?
 - [ ] ¿Se vio en pantalla el flujo, no solo un frame mental?
 - [ ] ¿Se paró para OK visual?
 
