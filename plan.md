@@ -1,9 +1,9 @@
-# Zaralle — plan de desarrollo
+# Coquillage — plan de desarrollo
 
 Documento vivo. Aquí va el prompt original, la referencia visual, qué hay que hacer y el estado real del repo.
 
-**Workspace:** `C:\Users\mario\workplace\Zaralle`  
-**Repo:** https://github.com/MarioJoseMelendez/Zaralle  
+**Workspace:** `C:\Users\mario\workplace\Coquillage`  
+**Repo:** https://github.com/MarioJoseMelendez/Coquillage  
 **Motor:** Rust directo, sin Godot / Unity / Bevy.  
 **Fase actual:** 8 — Player (compila; falta tu OK visual)
 
@@ -881,7 +881,7 @@ Water, sunlight, shadows and atmosphere should provide realism without turning t
 No crear módulos vacíos. Solo lo que Phase 1 necesite:
 
 ```
-Zaralle/
+Coquillage/
   plan.md
   Cargo.toml
   src/main.rs
@@ -907,7 +907,7 @@ Gráficos de Phase 1: patrón de prueba honesto (hierba / tierra / sendero gener
 
 | Item | Estado |
 | --- | --- |
-| Workspace Zaralle | hecho |
+| Workspace Coquillage | hecho |
 | Repo GitHub renombrado y vaciado | hecho (`main`) |
 | Referencia copiada a `assets/reference/` | hecho |
 | Este `plan.md` | hecho |
@@ -944,13 +944,13 @@ Cuando termine Phase 1, el informe de cierre va en la siguiente sección.
 
 ```powershell
 $env:Path = "C:\Users\mario\w64devkit\bin;" + $env:Path
-cd C:\Users\mario\workplace\Zaralle
-cargo +zaralle-gnu run --release
+cd C:\Users\mario\workplace\Coquillage
+cargo +coquillage-gnu run --release
 ```
 
-Ventana **Zaralle — Phase 1** a 1280×720. Comprueba píxeles nítidos al redimensionar, letterbox si no es múltiplo de 640×360, y que el sendero se vea al mover la cámara.
+Ventana **Coquillage — Phase 1** a 1280×720. Comprueba píxeles nítidos al redimensionar, letterbox si no es múltiplo de 640×360, y que el sendero se vea al mover la cámara.
 
-**Toolchain local:** `rustc` GNU 1.96 (`zaralle-gnu`) + w64devkit gcc. El host MSVC no tiene `link.exe`.
+**Toolchain local:** `rustc` GNU 1.96 (`coquillage-gnu`) + w64devkit gcc. El host MSVC no tiene `link.exe`.
 
 **Pixler:** sigue sin token; Phase 1 usa gráficos de prueba.
 
@@ -971,11 +971,11 @@ Ventana **Zaralle — Phase 1** a 1280×720. Comprueba píxeles nítidos al redi
 
 ```powershell
 $env:Path = "C:\Users\mario\w64devkit\bin;" + $env:Path
-cd C:\Users\mario\workplace\Zaralle
-cargo +zaralle-gnu run --release
+cd C:\Users\mario\workplace\Coquillage
+cargo +coquillage-gnu run --release
 ```
 
-Ventana **Zaralle — Phase 2**. Recorre con WASD: hierba, sendero, piedra, arena, bordes mezclados, pebbles/tufts nítidos al redimensionar.
+Ventana **Coquillage — Phase 2**. Recorre con WASD: hierba, sendero, piedra, arena, bordes mezclados, pebbles/tufts nítidos al redimensionar.
 
 **Limitaciones:** transiciones son dither de borde, no autotile blob de 16 variantes. Pixler sigue fuera.
 
@@ -1016,7 +1016,7 @@ Ventana **Zaralle — Phase 2**. Recorre con WASD: hierba, sendero, piedra, aren
 - Haze frío en el present pass (mix de color, no desenfoque).
 - Maximize reconfigura el swapchain al tamaño real y usa la mayor escala entera.
 
-**Cómo probarlo:** ventana **Zaralle — Phase 5**. Busca el estanque teal, espera las ondas. Maximiza: el bosque debe crecer, no quedar un recuadro chico. Los píxeles siguen nítidos.
+**Cómo probarlo:** ventana **Coquillage — Phase 5**. Busca el estanque teal, espera las ondas. Maximiza: el bosque debe crecer, no quedar un recuadro chico. Los píxeles siguen nítidos.
 
 **Limitaciones:** no hay reflexión de árboles en el agua (no hay buffer de reflexión).
 
@@ -1043,7 +1043,7 @@ Ventana **Zaralle — Phase 2**. Recorre con WASD: hierba, sendero, piedra, aren
 - GPU: 2 draw calls. Solo se suben las instancias de sombra cada frame. Uniform de cámara si hubo pan.
 - Título con FPS una vez por segundo. Decisiones en `DEV.md` §18.
 
-**Cómo probarlo:** ventana **Zaralle — Phase 7**. Recorre el bosque: nada de hierba encima de copas, sombras de un solo blob, título ~60 fps. Q/E y R siguen igual.
+**Cómo probarlo:** ventana **Coquillage — Phase 7**. Recorre el bosque: nada de hierba encima de copas, sombras de un solo blob, título ~60 fps. Q/E y R siguen igual.
 
 ### Phase 8 — Player
 
@@ -1056,4 +1056,4 @@ Ventana **Zaralle — Phase 2**. Recorre con WASD: hierba, sendero, piedra, aren
 - Cámara con deadzone 80×48, lerp y snap a píxel.
 - Si estás bajo una copa, **solo esa** se pone ghost (~0.32).
 
-**Cómo probarlo:** ventana **Zaralle — Phase 8**. Camina al agua (para), métete bajo un árbol (la copa se transparenta), pasa delante (tú encima). Q/E y R igual.
+**Cómo probarlo:** ventana **Coquillage — Phase 8**. Camina al agua (para), métete bajo un árbol (la copa se transparenta), pasa delante (tú encima). Q/E y R igual.

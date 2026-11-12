@@ -1,4 +1,4 @@
-# Zaralle — pixel art, color, anti-slop
+# Coquillage — pixel art, color, anti-slop
 
 Primary look (in this order):
 

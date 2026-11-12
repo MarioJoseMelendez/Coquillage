@@ -188,7 +188,7 @@ fn bake_normals(
         {
             0.22
         } else {
-            0.58
+            0.82
         };
         bake_frame_normals(albedo, &mut out, atlas_w, frame, strength);
     }

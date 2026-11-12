@@ -1,40 +1,43 @@
-# Zaralle
+<p align="center">
+  <img src="assets/brand/coquillage-logo.png" alt="Coquillage" width="520">
+</p>
 
-Top-down wilderness sandbox. Custom Rust renderer (`wgpu` + `winit`), no game engine.
+<p align="center">
+  <img alt="Rust 1.96" src="https://img.shields.io/badge/rust-1.96-c45c26?style=flat-square">
+  <img alt="wgpu 30" src="https://img.shields.io/badge/wgpu-30-5b4b8a?style=flat-square">
+  <img alt="winit" src="https://img.shields.io/badge/winit-0.30-3d6b4f?style=flat-square">
+  <img alt="top-down" src="https://img.shields.io/badge/cámara-90°%20top--down-d6c24a?style=flat-square">
+  <img alt="640x360" src="https://img.shields.io/badge/lógico-640×360-7aa2b0?style=flat-square">
+</p>
 
-Phase 8 is the player: walk the forest, collide with water and trunks, ghost the canopy you are under. Logical resolution 640×360.
+<p align="center">
+  Bosque a vista de pájaro. Render propio. Sin motor.
+</p>
 
-## How to run (Phase 8)
+Caminas un claro: agua, troncos, copas que se abren solo cuando pasas debajo. El sol mueve la luz de las hojas. De noche entra la luna. Una llama cerca del claro tira a naranja.
 
-Needs [Rust](https://rustup.rs/) 1.96 and a C linker.
+## Jugar
 
-This PC has no Visual Studio `link.exe`. Use MinGW (w64devkit) plus the `zaralle-gnu` rustup toolchain:
+Rust 1.96 y un linker de C. En Windows, MinGW (w64devkit) en el `PATH`, y el toolchain gnu que ya usa esta máquina.
 
 ```powershell
-$env:Path = "C:\Users\mario\w64devkit\bin;" + $env:Path
-cd C:\Users\mario\workplace\Zaralle
-cargo +zaralle-gnu run --release
+cargo run --release
 ```
 
-A window titled **Zaralle — Phase 8** should open at 1280×720 (2× scale). The title shows FPS once per second.
+La ventana se llama **Coquillage — Phase 8**, a 1280×720. El título muestra los FPS.
 
-| Input | Action |
+| Tecla | Hace |
 | --- | --- |
-| W A S D or arrows | Walk |
-| Q / E | Skip 1 hour |
-| R | Toggle rain |
-| Escape | Quit |
+| W A S D o flechas | Caminar |
+| Q / E | Saltar una hora |
+| R | Lluvia |
+| Escape | Salir |
 
-What you should see:
+## Qué mirar
 
-- A small cloaked figure, viewed from above (head and shoulders, no face)
-- You stop at water and tree trunks; grass and bushes you can cross
-- Walking under a canopy fades **that** tree only
-- Camera follows with a little slack, still pixel-snapped
+- Figura chica desde arriba. Cabeza arena, camisa azul, manos de cuatro píxeles.
+- El agua y los troncos frenan. La hierba no.
+- Bajo una copa, solo esa copa se transparenta.
+- Q y E mueven la mancha clara de las hojas. La llama del claro no cambia de color con la hora.
 
-Stop after checking that. Audio is Phase 9.
-
-```powershell
-python tools/gen_tiles.py
-python tools/gen_props.py
-```
+Los sprites salen de `tools/gen_props.py` y `tools/gen_tiles.py`.

@@ -35,6 +35,9 @@ struct LightUniform {
     wind: [f32; 2],
     rain: f32,
     _weather_pad: f32,
+    key_hi: [f32; 4],
+    point0: [f32; 4],
+    point1: [f32; 4],
 }
 
 #[derive(Clone, Copy)]
@@ -233,6 +236,33 @@ fn vec3_pad(c: [f32; 3], w: f32) -> [f32; 4] {
     [c[0], c[1], c[2], w]
 }
 
+fn place_torches(cover: &[Instance]) -> [[f32; 4]; 2] {
+    // Opening camera sits on this point. One flame stays inside that frame.
+    let anchor_x = (2048.0 - 640.0) * 0.35 + 320.0 + 110.0;
+    let anchor_y = (1280.0 - 360.0) * 0.4 + 180.0 + 36.0;
+    let mut out = [[anchor_x, anchor_y, 96.0, 1.0], [0.0; 4]];
+    let mut best: Option<(f32, [f32; 2])> = None;
+    for inst in cover.iter().filter(|inst| inst.size_xy[0] >= 64.0) {
+        let center = [
+            inst.world_xy[0] + inst.size_xy[0] * 0.55,
+            inst.world_xy[1] + inst.size_xy[1] * 0.5,
+        ];
+        let dx = center[0] - anchor_x;
+        let dy = center[1] - anchor_y;
+        if dx * dx + dy * dy < 160.0 * 160.0 {
+            continue;
+        }
+        let area = inst.size_xy[0] * inst.size_xy[1];
+        if best.map(|(a, _)| area > a).unwrap_or(true) {
+            best = Some((area, center));
+        }
+    }
+    if let Some((_, center)) = best {
+        out[1] = [center[0], center[1], 88.0, 1.0];
+    }
+    out
+}
+
 pub struct Renderer {
     #[allow(dead_code)]
     pub window: Arc<Window>,
@@ -273,6 +303,7 @@ pub struct Renderer {
     fps_acc: f32,
     fps_n: u32,
     fps_dirty: bool,
+    torches: [[f32; 4]; 2],
 }
 
 impl Renderer {
@@ -300,7 +331,7 @@ impl Renderer {
 
         let (device, queue) = adapter
             .request_device(&wgpu::DeviceDescriptor {
-                label: Some("zaralle-device"),
+                label: Some("coquillage-device"),
                 required_features: wgpu::Features::empty(),
                 required_limits: wgpu::Limits::downlevel_defaults()
                     .using_resolution(adapter.limits()),
@@ -644,6 +675,7 @@ impl Renderer {
         let cover_start = terrain.cover_start;
         let mut instances = terrain.instances;
         let cover = instances.split_off(cover_start as usize);
+        let torches = place_torches(&cover);
         let casters = terrain.casters;
         let player_caster = terrain.player_caster as usize;
         let layers = terrain.layers;
@@ -698,6 +730,7 @@ impl Renderer {
             fps_acc: 0.0,
             fps_n: 0,
             fps_dirty: false,
+            torches,
         })
     }
 
@@ -790,10 +823,9 @@ impl Renderer {
         } else {
             -1.0 + moon_path * 2.0
         };
-        let mut sun_dir = glam::Vec2::new(az, 0.72).normalize();
-        sun_dir.x = sun_dir.x.abs().max(0.20);
-        sun_dir.y = sun_dir.y.abs().max(0.45);
-        sun_dir = sun_dir.normalize();
+        // Azimuth actually flips from morning to evening. A north bias keeps
+        // the key readable in top-down without pinning it to one corner.
+        let sun_dir = glam::Vec2::new(az * 0.95, 0.55).normalize();
         let elevation = if sun_up {
             0.28 + sun_elev * 0.64
         } else {
@@ -820,6 +852,11 @@ impl Renderer {
         let haze = grade.haze + rain * 0.035;
         let sat = grade.sat * (1.0 - rain * 0.06);
         let sun = mix3(grade.light, [0.90, 0.96, 1.02], rain * 0.22);
+        let key_hi = if sun_up {
+            vec3_pad(rgb8(186, 196, 72), 1.0)
+        } else {
+            vec3_pad(rgb8(168, 206, 186), 0.35)
+        };
         let light = LightUniform {
             sun_dir: sun_dir.to_array(),
             elevation,
@@ -835,6 +872,9 @@ impl Renderer {
             wind: [0.92 * wind_amp, 0.08 * wind_amp],
             rain,
             _weather_pad: 0.0,
+            key_hi,
+            point0: self.torches[0],
+            point1: self.torches[1],
         };
         self.queue
             .write_buffer(&self.light_buffer, 0, bytemuck::bytes_of(&light));

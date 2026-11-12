@@ -15,6 +15,9 @@ struct Light {
     wind: vec2<f32>,
     rain: f32,
     _weather_pad: f32,
+    key_hi: vec4<f32>,
+    point0: vec4<f32>,
+    point1: vec4<f32>,
 };
 
 @group(0) @binding(1) var<uniform> light: Light;
@@ -115,22 +118,37 @@ fn digit_ink(d: i32, lx: i32, ly: i32) -> bool {
     return ((digit_row(d, ly) >> u32(2 - lx)) & 1) == 1;
 }
 
+fn clock_cell(px: vec2<i32>, origin: vec2<i32>) -> vec2<i32> {
+    // 2×2 so the digits survive the canopy. One font pixel, four screen pixels.
+    let p = px - origin;
+    return vec2<i32>(p.x / 2, p.y / 2);
+}
+
 fn clock_ink(px: vec2<i32>, origin: vec2<i32>, h: i32, m: i32) -> bool {
     let p = px - origin;
-    if (p.y < 0 || p.y > 4) {
+    if (p.x < 0 || p.y < 0) {
+        return false;
+    }
+    let q = clock_cell(px, origin);
+    if (q.y > 4 || q.x > 16) {
         return false;
     }
     let digits = array<i32, 4>(h / 10, h - (h / 10) * 10, m / 10, m - (m / 10) * 10);
     let xs = array<i32, 4>(0, 4, 10, 14);
-    if (p.x == 8 && (p.y == 1 || p.y == 3)) {
+    if (q.x == 8 && (q.y == 1 || q.y == 3)) {
         return true;
     }
     for (var i = 0; i < 4; i++) {
-        if (digit_ink(digits[i], p.x - xs[i], p.y)) {
+        if (digit_ink(digits[i], q.x - xs[i], q.y)) {
             return true;
         }
     }
     return false;
+}
+
+fn clock_plate(px: vec2<i32>, origin: vec2<i32>) -> bool {
+    let p = px - (origin - vec2<i32>(2, 2));
+    return p.x >= 0 && p.y >= 0 && p.x < 38 && p.y < 14;
 }
 
 fn sky_open(worldp: vec2<f32>) -> bool {
@@ -248,32 +266,35 @@ fn fs_main(in: VsOut) -> @location(0) vec4<f32> {
         }
     }
 
+    // Edge only. Midday is flat. The rim wakes up on the way into night and
+    // stays under the rain rim. The old sin curve hit night strength while
+    // the sun was still up, and a second multiply darkened every corner.
     let uvn = in.uv * 2.0 - 1.0;
-    let canopy = 1.0 - dot(uvn, uvn) * 0.05;
     let rim = max(abs(uvn.x), abs(uvn.y));
-    let day_k = select(
-        0.0,
-        sin(clamp((hour - 6.0) / 12.0, 0.0, 1.0) * 3.14159265),
-        hour > 6.0 && hour < 18.0
-    );
-    let aura = smoothstep(0.78, 1.0, rim) * mix(0.18, 0.05, day_k);
-    rgb = mix(rgb, mix(fog, vec3<f32>(0.72, 0.76, 0.78), 0.40), aura);
-    rgb *= canopy;
+    let to_night = smoothstep(15.5, 19.5, hour);
+    let from_night = select(0.0, 1.0 - smoothstep(4.0, 6.3, hour), hour < 6.5);
+    let clear_k = max(to_night, from_night);
+    let edge = smoothstep(0.88, 1.0, rim);
+    let dry_aura = edge * clear_k * 0.07;
+    let wet_aura = smoothstep(0.84, 1.0, rim) * rain * 0.13;
+    let aura = max(dry_aura, wet_aura);
+    rgb = mix(rgb, mix(fog, vec3<f32>(0.62, 0.66, 0.72), 0.25), aura);
+    rgb *= 1.0 - rim * rim * (clear_k * 0.035 + rain * 0.06);
 
-    // Clock rides with the sun, a few pixels below. Fill from the disc, 1 px purple shadow.
+    // Clock under the sun. Dark plate (LEAF_SH) and foam ink, or it
+    // disappears into the canopy. 2× the 3×5 font.
     let ih = i32(floor(hour)) % 24;
     let im = i32(floor(fract(hour) * 60.0)) % 60;
-    let clock_o = vec2<i32>(i32(round(cx)) - 8, i32(round(cy)) + 9);
+    let clock_o = vec2<i32>(i32(round(cx)) - 17, i32(round(cy)) + 10);
     let pxi = vec2<i32>(px.x, px.y);
-    let ink = clock_ink(pxi, clock_o, ih, im);
-    let sh = clock_ink(pxi, clock_o + vec2<i32>(1, 1), ih, im) && !ink;
     let foam = vec3<f32>(214.0, 224.0, 210.0) / 255.0;
     let leaf_sh = vec3<f32>(56.0, 40.0, 72.0) / 255.0;
-    if (sh) {
-        rgb = mix(rgb, leaf_sh, 0.55);
+    let ink = clock_ink(pxi, clock_o, ih, im);
+    if (clock_plate(pxi, clock_o) && !ink) {
+        rgb = leaf_sh;
     }
     if (ink) {
-        rgb = mix(rgb, mix(light.disc.xyz, foam, 0.45), 0.78);
+        rgb = foam;
     }
     return vec4<f32>(rgb, src.a);
 }
